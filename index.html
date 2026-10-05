@@ -1,0 +1,1063 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="End-to-end encrypted text snippets. AES-256-GCM in your browser. One auditable static HTML file — no backend code.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="trustless.txt — end-to-end encrypted text snippets">
+<meta property="og:description" content="Share text across devices without trusting us. AES-256-GCM in your browser, one auditable HTML file.">
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect x='7' y='14' width='18' height='13' rx='2' fill='%23111'/><path d='M11 14v-4a5 5 0 0 1 10 0v4' stroke='%23111' stroke-width='2.5' fill='none' stroke-linecap='round'/></svg>">
+<title>trustless.txt · end-to-end encrypted text snippets</title>
+<meta http-equiv="Content-Security-Policy"
+  content="default-src 'none';
+           script-src 'unsafe-inline';
+           style-src 'unsafe-inline';
+           connect-src https://YOUR_PROJECT.supabase.co;
+           img-src 'none';
+           base-uri 'none';
+           form-action 'none';">
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #fafaf7;
+    --fg: #15171a;
+    --mut: #6b7280;
+    --bd: #e5e7eb;
+    --bd2: #d1d5db;
+    --acc: #111;
+    --accfg: #fafaf7;
+    --ok: #047857;
+    --warn: #b45309;
+    --err: #b91c1c;
+    --card: #ffffff;
+    --code-bg: #f3f4f6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0e0f12;
+      --fg: #e7e9ee;
+      --mut: #8a92a0;
+      --bd: #23262d;
+      --bd2: #2e3239;
+      --acc: #e7e9ee;
+      --accfg: #0e0f12;
+      --ok: #34d399;
+      --warn: #fbbf24;
+      --err: #fb7185;
+      --card: #14161a;
+      --code-bg: #1a1d22;
+    }
+  }
+  * { box-sizing: border-box; }
+  :focus-visible {
+    outline: 2px solid var(--acc);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+  html, body { margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg); color: var(--fg);
+    font: 15px/1.55 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: inherit; }
+  code, pre, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+
+  header.nav {
+    border-bottom: 1px solid var(--bd);
+    padding: 14px 20px;
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--bg);
+    position: sticky; top: 0; z-index: 10;
+  }
+  .brand { font-weight: 700; letter-spacing: -0.01em; font-size: 15px; }
+  .brand-icon {
+    width: 16px; height: 16px;
+    vertical-align: -3px; margin-right: 6px;
+    fill: currentColor;
+  }
+  .nav-right { display: flex; gap: 14px; font-size: 13px; color: var(--mut); }
+  .nav-right a { text-decoration: none; }
+  .nav-right a:hover { color: var(--fg); }
+
+  main { max-width: 880px; margin: 0 auto; padding: 56px 20px 80px; }
+  @media (max-width: 640px) {
+    main { padding: 24px 16px 48px; }
+  }
+
+  .hero { margin-bottom: 36px; }
+  .hero h1 {
+    font-size: clamp(28px, 4.5vw, 40px); line-height: 1.1; letter-spacing: -0.02em;
+    margin: 0 0 14px; font-weight: 700;
+    text-wrap: balance;
+  }
+  .hero h1 .nobr { white-space: nowrap; }
+  .hero h1 .us {
+    text-decoration: underline;
+    text-decoration-thickness: 3px;
+    text-decoration-color: var(--ok);
+    text-underline-offset: 4px;
+  }
+  .hero .lede { font-size: 16px; color: var(--mut); margin: 0; }
+  .hero .lede + .lede { margin-top: 8px; }
+  .hero .lede strong { color: var(--fg); font-weight: 600; }
+
+  .badges { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+  .badge {
+    font-size: 12px; padding: 6px 10px; border-radius: 999px;
+    border: 1px solid var(--bd2); color: var(--fg);
+    background: transparent;
+  }
+  .badge.ok { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 35%, var(--bd2)); }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--bd);
+    border-radius: 14px;
+    padding: 18px;
+  }
+
+  .composer .head {
+    display: flex; align-items: center; justify-content: flex-end;
+    border-bottom: 1px solid var(--bd); padding-bottom: 10px; margin-bottom: 12px;
+  }
+  .composer .stats { font-size: 12px; color: var(--mut); }
+  .composer .stats.near { color: var(--warn); }
+  .composer .stats.over { color: var(--err); }
+
+  textarea {
+    width: 100%; min-height: 280px; resize: vertical;
+    border: none; outline: none; background: transparent; color: var(--fg);
+    font: 13.5px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace;
+    padding: 0;
+  }
+  @media (max-width: 640px) {
+    textarea { min-height: 200px; }
+  }
+
+  .controls {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+    margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--bd);
+  }
+  @media (max-width: 640px) { .controls { grid-template-columns: 1fr; } }
+  .field label { display: block; font-size: 12px; color: var(--mut); margin-bottom: 6px; letter-spacing: 0.02em; text-transform: uppercase; }
+  .field select, .field input[type=text] {
+    width: 100%; padding: 9px 12px; border: 1px solid var(--bd2); border-radius: 8px;
+    background: transparent; color: var(--fg); font: inherit;
+  }
+  .field input[type=text].mono { font-family: ui-monospace, monospace; font-size: 13px; }
+  .field input[readonly] { background: var(--code-bg); cursor: default; }
+  .field .hint { font-size: 11.5px; color: var(--mut); margin-top: 6px; line-height: 1.4; }
+  .field .chips { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
+  .field .chips .hint { margin: 0; }
+  .field .chips .roll-btn {
+    padding: 3px 9px; font-size: 11px; margin-left: auto;
+    border-radius: 6px;
+  }
+
+  .actions {
+    display: flex; gap: 10px; align-items: center; justify-content: flex-end;
+    margin-top: 18px;
+  }
+  button {
+    appearance: none; cursor: pointer; font: inherit;
+    padding: 10px 16px; border-radius: 8px; border: 1px solid var(--bd2);
+    background: transparent; color: var(--fg);
+  }
+  button.primary {
+    background: var(--acc); color: var(--accfg); border-color: transparent;
+  }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  button.ghost { color: var(--mut); }
+
+  .out {
+    margin-top: 16px;
+    border: 1px solid var(--bd); border-radius: 10px; padding: 0;
+    background: var(--card);
+    overflow: hidden;
+  }
+  @keyframes resultIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .out:not(.hidden) { animation: resultIn 200ms ease-out; }
+  @media (prefers-reduced-motion: reduce) {
+    .out:not(.hidden) { animation: none; }
+  }
+  .out .result-head {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 14px;
+    background: color-mix(in srgb, var(--ok) 8%, transparent);
+    border-bottom: 1px solid var(--bd);
+    font-size: 13px;
+  }
+  .out .result-head .ok-dot { color: var(--ok); }
+  .out .result-head .exp-inline { color: var(--mut); margin-left: auto; font-size: 12px; }
+  .out .share-block { padding: 14px; }
+  .out .share-block + .share-block { border-top: 1px solid var(--bd); }
+  .out .rec-pill {
+    display: inline-block;
+    font-size: 10.5px; font-weight: 600;
+    letter-spacing: 0.04em; text-transform: uppercase;
+    padding: 2px 7px; border-radius: 999px;
+    background: color-mix(in srgb, var(--ok) 12%, transparent);
+    color: var(--ok);
+    margin-right: 6px; vertical-align: 1px;
+  }
+  .out .share-block.secondary { background: color-mix(in srgb, var(--warn) 6%, transparent); }
+  .out .share-block.secondary .block-title { color: var(--mut); }
+  .out .share-block.secondary .block-title .sub { color: var(--warn); }
+  .out .block-title { font-size: 13px; margin-bottom: 12px; }
+  .out .block-title strong { font-weight: 600; }
+  .out .block-title .sub { display: block; color: var(--mut); font-size: 12px; font-weight: 400; margin-top: 2px; }
+  .out .kv + .kv { margin-top: 10px; }
+  .out .kv-label { font-size: 11.5px; color: var(--mut); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
+  .out .kv-row { display: flex; align-items: stretch; gap: 6px; }
+  .out .kv-row code {
+    flex: 1; min-width: 0;
+    font-family: ui-monospace, monospace; font-size: 13px; word-break: break-all; user-select: all;
+    background: var(--code-bg); padding: 8px 12px; border-radius: 6px; border: 1px solid var(--bd);
+    display: flex; align-items: center;
+  }
+  .out .inline-copy {
+    padding: 0 12px; font-size: 12px; border-radius: 6px;
+    border: 1px solid var(--bd2); background: var(--card); color: var(--fg);
+    flex-shrink: 0;
+  }
+  .out .inline-copy:hover { background: var(--code-bg); }
+  .out .warn-text {
+    font-size: 12px; color: var(--warn); margin: 0 0 10px;
+    line-height: 1.5;
+  }
+  .out .qr-wrap {
+    margin-top: 12px; display: flex; align-items: center; gap: 12px;
+  }
+  .out .qr-wrap svg {
+    width: 128px; height: 128px; flex-shrink: 0;
+    border-radius: 6px; border: 1px solid var(--bd2);
+    background: #fff; padding: 4px; box-sizing: border-box;
+  }
+  .out .qr-wrap .qr-label {
+    font-size: 12px; color: var(--mut); line-height: 1.5;
+  }
+  .out .qr-wrap:empty { display: none; }
+
+  .err:not(:empty) {
+    margin-top: 12px;
+    padding: 10px 12px;
+    background: color-mix(in srgb, var(--err) 8%, transparent);
+    border: 1px solid color-mix(in srgb, var(--err) 35%, var(--bd2));
+    border-radius: 8px;
+    color: var(--err);
+    font-size: 13px;
+  }
+
+  /* viewer */
+  #viewerView .hero { margin-bottom: 16px; }
+  #viewerView .hero h1 { font-size: 18px; font-weight: 600; margin-bottom: 6px; }
+  #viewerView .hero .lede { font-size: 13px; }
+  .v-loading { color: var(--mut); font-size: 13.5px; padding: 4px 0 8px; }
+  .viewer .head { font-size: 13px; color: var(--mut); margin-bottom: 8px; }
+  .viewer pre {
+    margin: 0; padding: 14px; border-radius: 10px;
+    background: var(--code-bg); border: 1px solid var(--bd);
+    white-space: pre-wrap; word-wrap: break-word;
+    font: 13.5px/1.55 ui-monospace, monospace;
+    max-height: 70vh; overflow: auto;
+  }
+
+  /* stack strip */
+  .stack {
+    margin-top: 18px;
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 0;
+    border: 1px solid var(--bd); border-radius: 12px; overflow: hidden;
+    background: var(--card);
+  }
+  @media (max-width: 640px) { .stack { grid-template-columns: 1fr; } }
+  .stack > div { padding: 14px 16px; border-right: 1px solid var(--bd); }
+  .stack > div:last-child { border-right: none; }
+  @media (max-width: 640px) {
+    .stack > div { border-right: none; border-bottom: 1px solid var(--bd); }
+    .stack > div:last-child { border-bottom: none; }
+  }
+  .stack .label {
+    font-size: 10.5px; color: var(--mut); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px;
+  }
+  .stack .name { font-size: 14px; font-weight: 600; }
+  .stack .desc { font-size: 12px; color: var(--mut); margin-top: 2px; }
+
+  /* trust section */
+  .trust { margin-top: 56px; scroll-margin-top: 70px; }
+  .trust h2 { font-size: 20px; letter-spacing: -0.01em; margin: 0 0 14px; }
+  .trust .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 720px) { .trust .grid { grid-template-columns: 1fr; } }
+  .trust .item h3 { font-size: 14px; margin: 0 0 6px; }
+  .trust .item p { margin: 0; color: var(--mut); font-size: 13.5px; line-height: 1.55; }
+  .trust .item code { background: var(--code-bg); padding: 2px 6px; border-radius: 4px; font-size: 12.5px; }
+
+  /* timeline (How it works) */
+  .timeline {
+    list-style: none; padding: 0; margin: 0;
+    counter-reset: step;
+    position: relative;
+  }
+  .timeline::before {
+    content: ""; position: absolute;
+    left: 14px; top: 16px; bottom: 16px;
+    width: 2px; background: var(--bd);
+  }
+  .timeline > li {
+    counter-increment: step;
+    position: relative;
+    margin-left: 40px;
+    padding: 16px 18px;
+    margin-bottom: 12px;
+    background: var(--card);
+    border: 1px solid var(--bd);
+    border-radius: 14px;
+  }
+  .timeline > li:last-child { margin-bottom: 0; }
+  .timeline > li::before {
+    content: counter(step);
+    position: absolute;
+    left: -40px; top: 16px;
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    background: var(--acc); color: var(--accfg);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 600;
+    z-index: 1;
+  }
+  .timeline h3 { font-size: 14px; margin: 0 0 6px; }
+  .timeline p { margin: 0; color: var(--mut); font-size: 13.5px; line-height: 1.55; }
+  .timeline code { background: var(--code-bg); padding: 2px 6px; border-radius: 4px; font-size: 12.5px; }
+
+  footer { color: var(--mut); font-size: 12px; text-align: center; padding: 30px 0 10px; }
+
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="brand">
+    <svg class="brand-icon" viewBox="0 0 32 32" aria-hidden="true">
+      <rect x="7" y="14" width="18" height="13" rx="2"/>
+      <path d="M11 14v-4a5 5 0 0 1 10 0v4" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+    </svg>
+    trustless.txt
+  </div>
+  <nav class="nav-right">
+    <a href="#how">How it works</a>
+    <a href="#verify">Verify</a>
+    <a href="https://github.com/" target="_blank" rel="noreferrer">Source</a>
+  </nav>
+</header>
+
+<main>
+
+  <!-- composer view -->
+  <section id="composerView">
+    <div class="hero">
+      <h1>Share text across devices <span class="nobr">without trusting <span class="us">us</span>.</span></h1>
+      <p class="lede">
+        <strong>Your secret never leaves here.</strong> No backend code, no service worker — just one static HTML file you can audit byte for byte. Don't take our word for it: ask your Claude to audit <a id="auditUrl" href="/">this page</a>.
+      </p>
+      <div class="badges">
+        <span class="badge ok"><span aria-hidden="true">●</span> End-to-End Encrypted</span>
+        <span class="badge ok"><span aria-hidden="true">●</span> Runs in your browser</span>
+        <span class="badge ok"><span aria-hidden="true">●</span> Auto-expires</span>
+      </div>
+    </div>
+
+    <div class="card composer">
+      <div class="head">
+        <div class="stats" id="stats">0 B / 48 KB</div>
+      </div>
+      <textarea id="text" aria-label="Text to encrypt" placeholder="Paste or type your text here…"></textarea>
+
+      <div class="controls">
+        <div class="field">
+          <label for="ttl">Expiration</label>
+          <select id="ttl">
+            <option value="1" selected>1 hour</option>
+            <option value="6">6 hours</option>
+            <option value="24">1 day</option>
+            <option value="168">7 days</option>
+          </select>
+          <div class="hint">After expiration the ciphertext is permanently deleted.</div>
+        </div>
+
+        <div class="field" id="keyField">
+          <label for="userKey">Decryption key</label>
+          <input type="text" id="userKey" class="mono" spellcheck="false" autocomplete="off" readonly>
+          <div class="chips">
+            <span class="hint">Random 18-char key — never leaves your browser.</span>
+            <button type="button" id="rollKey" class="ghost roll-btn" aria-label="Regenerate key"><span aria-hidden="true">↻</span> regenerate</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="ghost" id="clear" disabled>Clear</button>
+        <button class="primary" id="create" disabled>Generate link</button>
+      </div>
+
+      <div id="result" class="out hidden">
+        <div class="result-head">
+          <span class="ok-dot" aria-hidden="true">●</span>
+          <span>Encrypted &amp; saved.</span>
+          <span class="exp-inline" id="exp"></span>
+        </div>
+
+        <div class="share-block recommended">
+          <div class="block-title">
+            <span class="rec-pill">Recommended</span>
+            Send these on <strong>two different channels</strong>
+            <span class="sub">e.g. link in chat, key by SMS — so a single leaked channel can't decrypt.</span>
+          </div>
+
+          <div class="kv">
+            <div class="kv-label">1 · Link</div>
+            <div class="kv-row">
+              <code id="urlNoKey"></code>
+              <button id="copyUrlNoKey" class="inline-copy">Copy link</button>
+            </div>
+          </div>
+
+          <div class="kv">
+            <div class="kv-label">2 · Key</div>
+            <div class="kv-row">
+              <code id="keyOnly"></code>
+              <button id="copyKey" class="inline-copy">Copy key</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="share-block secondary">
+          <div class="block-title">
+            Or copy as one link <span class="sub">(less safe)</span>
+          </div>
+          <p class="warn-text">
+            <strong>Heads up:</strong> this URL includes the key. When opened, the key never reaches our server — browsers don't send anything after <code>#</code> over the network. But anyone (or any web service) who sees this URL — chat history, link previews, screen shares, browser history — can decrypt. Use only for throwaway content.
+          </p>
+          <div class="kv-row">
+            <code id="url"></code>
+            <button id="copy" class="inline-copy">Copy link</button>
+          </div>
+          <div class="qr-wrap" id="qrWrap"></div>
+        </div>
+      </div>
+      <div id="err1" class="err" role="alert" aria-live="polite"></div>
+    </div>
+
+    <section id="how" class="trust">
+      <h2>How it works</h2>
+      <ol class="timeline">
+        <li>
+          <h3>Encrypted in your browser</h3>
+          <p>A fresh 18-character key drawn from <code>crypto.getRandomValues</code> is stretched with PBKDF2-SHA256 (600,000 iterations) to a 256-bit AES-GCM key. Effective brute-force cost ≈ 2<sup>128</sup>. Encryption happens before any network call.</p>
+        </li>
+        <li>
+          <h3>Server stores ciphertext only</h3>
+          <p>Supabase receives <code>{id, ciphertext, bucket}</code>. Row-level security blocks update and delete; <code>pg_cron</code> purges expired rows every 5 minutes.</p>
+        </li>
+        <li>
+          <h3>Key travels in the URL fragment</h3>
+          <p>The part after <code>#</code> is never sent over HTTP. The server cannot see it, log it, or hand it to anyone.</p>
+        </li>
+        <li>
+          <h3>Auto-expires, then gone</h3>
+          <p>Ciphertext is deleted on TTL. After that no recovery is possible — the key alone is useless without the data.</p>
+        </li>
+      </ol>
+
+      <div class="stack" aria-label="Tech stack">
+        <div>
+          <div class="label">Host</div>
+          <div class="name">Cloudflare Pages</div>
+          <div class="desc">Static delivery, no compute.</div>
+        </div>
+        <div>
+          <div class="label">Database</div>
+          <div class="name">Supabase Postgres</div>
+          <div class="desc">Ciphertext only · RLS · pg_cron purge.</div>
+        </div>
+        <div>
+          <div class="label">Crypto</div>
+          <div class="name">Web Crypto API</div>
+          <div class="desc">AES-256-GCM · PBKDF2-SHA256 (600k).</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="verify" class="trust">
+      <h2>Verify it yourself</h2>
+      <div class="grid">
+        <div class="card item">
+          <h3>Read the source</h3>
+          <p>Open <code>view-source:</code> on this page. There is one HTML file. All JavaScript is inline. No bundlers, no opaque dependencies.</p>
+        </div>
+        <div class="card item">
+          <h3>Watch the network</h3>
+          <p>Open DevTools → Network. The only outbound request goes to <code>*.supabase.co/rest/v1/snippets</code>. CSP <code>connect-src</code> enforces it.</p>
+        </div>
+        <div class="card item">
+          <h3>Audit with Claude Code</h3>
+          <p>Save the HTML, then run <code>claude</code> in the directory and ask: <em>"Audit index.html for the security claims on the homepage. Find any way the plaintext or key could leak."</em></p>
+        </div>
+        <div class="card item">
+          <h3>Re-host it</h3>
+          <p>Don't trust this domain? Drop <code>index.html</code> on your own static host. Same code, your own infrastructure, same Supabase backend (or your own).</p>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      Single static HTML · No analytics · No cookies · No tracking
+    </footer>
+  </section>
+
+  <!-- viewer view -->
+  <section id="viewerView" class="hidden">
+    <div class="hero">
+      <h1 id="vTitle">Decrypted in your browser.</h1>
+      <p class="lede" id="vLede">The ciphertext was fetched from the server; the key from the URL fragment never left your device.</p>
+    </div>
+
+    <div class="v-loading hidden" id="vLoading" aria-live="polite">Fetching ciphertext…</div>
+
+    <!-- key prompt: shown when the URL has the ID but no #fragment -->
+    <div class="card composer hidden" id="keyPrompt">
+      <div class="field">
+        <label for="keyInput">Decryption key</label>
+        <input type="text" id="keyInput" class="mono" spellcheck="false" autocomplete="off"
+               placeholder="Paste the 18-char key you received separately">
+        <div class="hint">The key was sent to you separately (e.g. another channel). Paste it here to decrypt locally.</div>
+      </div>
+      <div class="actions">
+        <button class="primary" id="unlock">Decrypt</button>
+      </div>
+    </div>
+
+    <div class="card viewer hidden" id="viewerCard">
+      <div class="head" id="vmeta"></div>
+      <pre id="view"></pre>
+      <div class="actions">
+        <button id="vcopy">Copy text</button>
+        <button class="primary" id="vnew">Create new</button>
+      </div>
+    </div>
+    <div id="err2" class="err" role="alert" aria-live="polite"></div>
+  </section>
+
+</main>
+
+<script>
+"use strict";
+
+// ---------- config ----------
+const SUPABASE_URL = "https://YOUR_PROJECT.supabase.co";
+const SUPABASE_ANON_KEY = "REDACTED_ANON_KEY";
+const TABLE = "snippets";
+
+// Target: ~128-bit security against offline brute-force of the URL fragment.
+// 18 chars × log2(70) ≈ 110.3 bit raw entropy, plus PBKDF2 600k iter ≈ +19.2 bit
+// ⇒ ≈ 129.5 bit effective. No salt is needed because the key is fully random and
+// per-snippet unique; we still pass a fixed domain-separation tag because WebCrypto
+// PBKDF2 requires a non-empty salt parameter.
+const KEY_LEN = 18;
+const PBKDF2_ITERATIONS = 600_000;
+const KDF_DOMAIN_TAG = "sharetext-e2e/v1";
+const CLASS_UPPER  = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+const CLASS_LOWER  = "abcdefghijklmnopqrstuvwxyz";
+const CLASS_DIGIT  = "0123456789";
+const CLASS_SYMBOL = "-_~!*+$";
+const ALL_CHARS    = CLASS_UPPER + CLASS_LOWER + CLASS_DIGIT + CLASS_SYMBOL;
+
+// ---------- helpers ----------
+const $ = (id) => document.getElementById(id);
+const enc = new TextEncoder();
+const dec = new TextDecoder();
+const rand = (n) => crypto.getRandomValues(new Uint8Array(n));
+
+const b64u = {
+  enc: (buf) => btoa(String.fromCharCode(...new Uint8Array(buf)))
+                  .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""),
+  dec: (s) => {
+    s = s.replace(/-/g, "+").replace(/_/g, "/");
+    while (s.length % 4) s += "=";
+    const bin = atob(s);
+    const out = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+    return out;
+  },
+};
+
+// Unbiased pick of one char from `set` using rejection sampling.
+function pickChar(set) {
+  const limit = 256 - (256 % set.length);
+  while (true) {
+    const v = rand(1)[0];
+    if (v < limit) return set[v % set.length];
+  }
+}
+
+// Generate a random key of `len` chars guaranteed to contain all 4 classes.
+function randomKey(len = KEY_LEN) {
+  const required = [pickChar(CLASS_UPPER), pickChar(CLASS_LOWER), pickChar(CLASS_DIGIT), pickChar(CLASS_SYMBOL)];
+  const rest = [];
+  for (let i = 0; i < len - 4; i++) rest.push(pickChar(ALL_CHARS));
+  const arr = required.concat(rest);
+  // Fisher-Yates shuffle (biased modulo is fine here — len is small)
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = rand(1)[0] % (i + 1);
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr.join("");
+}
+
+// derive AES-256 key from the full fragment string via PBKDF2-SHA256.
+// See KEY_LEN / PBKDF2_ITERATIONS comment above for the 128-bit security target.
+async function deriveKey(fragment) {
+  const material = await crypto.subtle.importKey(
+    "raw", enc.encode(fragment), { name: "PBKDF2" }, false, ["deriveKey"]
+  );
+  return crypto.subtle.deriveKey(
+    {
+      name: "PBKDF2",
+      salt: enc.encode(KDF_DOMAIN_TAG),
+      iterations: PBKDF2_ITERATIONS,
+      hash: "SHA-256",
+    },
+    material,
+    { name: "AES-GCM", length: 256 },
+    false,
+    ["encrypt", "decrypt"]
+  );
+}
+
+async function encryptText(plain, fragment) {
+  const key = await deriveKey(fragment);
+  const iv = rand(12);
+  const ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, enc.encode(plain));
+  const out = new Uint8Array(iv.length + ct.byteLength);
+  out.set(iv, 0); out.set(new Uint8Array(ct), iv.length);
+  return out;
+}
+
+async function decryptText(payload, fragment) {
+  const key = await deriveKey(fragment);
+  const iv = payload.slice(0, 12);
+  const ct = payload.slice(12);
+  const pt = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, ct);
+  return dec.decode(pt);
+}
+
+
+// ---------- QR encoder ----------
+// Byte mode, error correction level L, versions 1-5 (single block).
+// Sufficient for URLs up to 106 bytes; throws on overflow.
+const QR_VERSIONS = {
+  1: { size: 21, data: 19, ec: 7,  align: [] },
+  2: { size: 25, data: 34, ec: 10, align: [6, 18] },
+  3: { size: 29, data: 55, ec: 15, align: [6, 22] },
+  4: { size: 33, data: 80, ec: 20, align: [6, 26] },
+  5: { size: 37, data: 108, ec: 26, align: [6, 30] },
+};
+const GF_EXP = new Uint8Array(512);
+const GF_LOG = new Uint8Array(256);
+{ let x = 1;
+  for (let i = 0; i < 255; i++) { GF_EXP[i] = x; GF_LOG[x] = i; x <<= 1; if (x & 0x100) x ^= 0x11D; }
+  for (let i = 255; i < 512; i++) GF_EXP[i] = GF_EXP[i - 255]; }
+const gfMul = (a, b) => (a === 0 || b === 0) ? 0 : GF_EXP[GF_LOG[a] + GF_LOG[b]];
+
+function rsGenerator(degree) {
+  let p = [1];
+  for (let i = 0; i < degree; i++) {
+    const n = new Array(p.length + 1).fill(0);
+    for (let j = 0; j < p.length; j++) { n[j] ^= p[j]; n[j+1] ^= gfMul(p[j], GF_EXP[i]); }
+    p = n;
+  }
+  return p;
+}
+function rsEncode(data, ecCount) {
+  const gen = rsGenerator(ecCount);
+  const buf = new Array(data.length + ecCount).fill(0);
+  for (let i = 0; i < data.length; i++) buf[i] = data[i];
+  for (let i = 0; i < data.length; i++) {
+    const f = buf[i];
+    if (f === 0) continue;
+    for (let j = 0; j < gen.length; j++) buf[i+j] ^= gfMul(gen[j], f);
+  }
+  return buf.slice(data.length);
+}
+
+const QR_MASKS = [
+  (y, x) => (y + x) % 2 === 0,
+  (y) => y % 2 === 0,
+  (y, x) => x % 3 === 0,
+  (y, x) => (y + x) % 3 === 0,
+  (y, x) => (Math.floor(y/2) + Math.floor(x/3)) % 2 === 0,
+  (y, x) => ((y*x) % 2) + ((y*x) % 3) === 0,
+  (y, x) => (((y*x) % 2) + ((y*x) % 3)) % 2 === 0,
+  (y, x) => (((y+x) % 2) + ((y*x) % 3)) % 2 === 0,
+];
+
+function qrEncode(text) {
+  const bytes = enc.encode(text);
+  let version = 0;
+  for (const v of [1,2,3,4,5]) {
+    if (4 + 8 + bytes.length * 8 + 4 <= QR_VERSIONS[v].data * 8) { version = v; break; }
+  }
+  if (!version) throw new Error("URL too long for QR (>106 bytes)");
+  const spec = QR_VERSIONS[version];
+  const sz = spec.size;
+
+  // build bitstream → codewords
+  const bits = [];
+  for (let i = 3; i >= 0; i--) bits.push((0b0100 >> i) & 1); // mode = byte
+  for (let i = 7; i >= 0; i--) bits.push((bytes.length >> i) & 1); // 8-bit count for v1-9
+  for (const b of bytes) for (let i = 7; i >= 0; i--) bits.push((b >> i) & 1);
+  const cap = spec.data * 8;
+  const tl = Math.min(4, cap - bits.length);
+  for (let i = 0; i < tl; i++) bits.push(0);
+  while (bits.length % 8) bits.push(0);
+  const pad = [0xEC, 0x11]; let pi = 0;
+  while (bits.length < cap) {
+    const p = pad[pi++ % 2];
+    for (let i = 7; i >= 0; i--) bits.push((p >> i) & 1);
+  }
+  const data = [];
+  for (let i = 0; i < bits.length; i += 8) {
+    let b = 0; for (let j = 0; j < 8; j++) b = (b << 1) | bits[i+j];
+    data.push(b);
+  }
+  const codewords = data.concat(rsEncode(data, spec.ec));
+
+  // matrix + reserved mask
+  const m0 = []; const r = [];
+  for (let i = 0; i < sz; i++) { m0.push(new Int8Array(sz).fill(-1)); r.push(new Uint8Array(sz)); }
+
+  const finder = (cy, cx) => {
+    for (let dy = -1; dy <= 7; dy++) for (let dx = -1; dx <= 7; dx++) {
+      const y = cy + dy, x = cx + dx;
+      if (y < 0 || x < 0 || y >= sz || x >= sz) continue;
+      let val = 0;
+      if (dy >= 0 && dy <= 6 && dx >= 0 && dx <= 6) {
+        const oB = dx === 0 || dx === 6 || dy === 0 || dy === 6;
+        const oC = dx >= 2 && dx <= 4 && dy >= 2 && dy <= 4;
+        val = (oB || oC) ? 1 : 0;
+      }
+      m0[y][x] = val; r[y][x] = 1;
+    }
+  };
+  finder(0, 0); finder(0, sz - 7); finder(sz - 7, 0);
+
+  for (const cy of spec.align) for (const cx of spec.align) {
+    if ((cx <= 8 && cy <= 8) || (cx <= 8 && cy >= sz - 9) || (cx >= sz - 9 && cy <= 8)) continue;
+    for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) {
+      const oB = Math.abs(dx) === 2 || Math.abs(dy) === 2;
+      const oC = dx === 0 && dy === 0;
+      m0[cy+dy][cx+dx] = (oB || oC) ? 1 : 0;
+      r[cy+dy][cx+dx] = 1;
+    }
+  }
+
+  for (let i = 8; i < sz - 8; i++) {
+    const v = i % 2 === 0 ? 1 : 0;
+    if (m0[6][i] === -1) { m0[6][i] = v; r[6][i] = 1; }
+    if (m0[i][6] === -1) { m0[i][6] = v; r[i][6] = 1; }
+  }
+  for (let i = 0; i <= 8; i++) { r[8][i] = 1; r[i][8] = 1; }
+  for (let i = 0; i <= 7; i++) { r[8][sz-1-i] = 1; r[sz-1-i][8] = 1; }
+  m0[sz - 8][8] = 1; r[sz - 8][8] = 1; // dark module
+
+  // zigzag data placement
+  const dataBits = [];
+  for (const b of codewords) for (let i = 7; i >= 0; i--) dataBits.push((b >> i) & 1);
+  let bi = 0; let up = true;
+  for (let col = sz - 1; col > 0; col -= 2) {
+    if (col === 6) col = 5;
+    for (let i = 0; i < sz; i++) {
+      const y = up ? sz - 1 - i : i;
+      for (const dx of [0, -1]) {
+        const x = col + dx;
+        if (r[y][x]) continue;
+        m0[y][x] = bi < dataBits.length ? dataBits[bi] : 0;
+        bi++;
+      }
+    }
+    up = !up;
+  }
+
+  // BCH(15,5) for format info; level L = 01
+  const bch = (d5) => {
+    let d = d5 << 10;
+    const g = 0b10100110111;
+    for (let i = 4; i >= 0; i--) if ((d >> (i + 10)) & 1) d ^= g << i;
+    return ((d5 << 10) | d) ^ 0b101010000010010;
+  };
+  const FORMAT_A = [[8,0],[8,1],[8,2],[8,3],[8,4],[8,5],[8,7],[8,8],[7,8],[5,8],[4,8],[3,8],[2,8],[1,8],[0,8]];
+
+  // try 8 masks, pick lowest penalty
+  const penalty = (m) => {
+    let p = 0;
+    for (let y = 0; y < sz; y++) {
+      let run = 1, last = m[y][0];
+      for (let x = 1; x < sz; x++) {
+        if (m[y][x] === last) { run++; if (run === 5) p += 3; else if (run > 5) p++; }
+        else { run = 1; last = m[y][x]; }
+      }
+    }
+    for (let x = 0; x < sz; x++) {
+      let run = 1, last = m[0][x];
+      for (let y = 1; y < sz; y++) {
+        if (m[y][x] === last) { run++; if (run === 5) p += 3; else if (run > 5) p++; }
+        else { run = 1; last = m[y][x]; }
+      }
+    }
+    for (let y = 0; y < sz - 1; y++) for (let x = 0; x < sz - 1; x++) {
+      const v = m[y][x];
+      if (v === m[y][x+1] && v === m[y+1][x] && v === m[y+1][x+1]) p += 3;
+    }
+    let dark = 0;
+    for (let y = 0; y < sz; y++) for (let x = 0; x < sz; x++) if (m[y][x]) dark++;
+    p += Math.floor(Math.abs((dark / (sz*sz)) * 100 - 50) / 5) * 10;
+    return p;
+  };
+
+  let best = null, bestP = Infinity;
+  for (let mask = 0; mask < 8; mask++) {
+    const mm = m0.map(row => Int8Array.from(row));
+    const fn = QR_MASKS[mask];
+    for (let y = 0; y < sz; y++) for (let x = 0; x < sz; x++) {
+      if (!r[y][x] && fn(y, x)) mm[y][x] ^= 1;
+    }
+    const code = bch((0b01 << 3) | mask);
+    for (let i = 0; i < 15; i++) {
+      const bit = (code >> (14 - i)) & 1;
+      const [ya, xa] = FORMAT_A[i];
+      mm[ya][xa] = bit;
+      if (i < 7) mm[sz - 1 - i][8] = bit;
+      else mm[8][sz - 15 + i] = bit;
+    }
+    const pp = penalty(mm);
+    if (pp < bestP) { bestP = pp; best = mm; }
+  }
+  return best;
+}
+
+function qrToSvg(matrix, scale = 4, margin = 4) {
+  const sz = matrix.length;
+  const total = (sz + 2 * margin) * scale;
+  let path = "";
+  for (let y = 0; y < sz; y++) for (let x = 0; x < sz; x++) {
+    if (matrix[y][x]) path += `M${(x+margin)*scale},${(y+margin)*scale}h${scale}v${scale}h-${scale}z`;
+  }
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${total} ${total}" shape-rendering="crispEdges" aria-hidden="true"><rect width="100%" height="100%" fill="#fff"/><path d="${path}" fill="#000"/></svg>`;
+}
+
+// ---------- supabase REST ----------
+const sbHeaders = () => ({
+  "apikey": SUPABASE_ANON_KEY,
+  "authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+  "content-type": "application/json",
+});
+
+async function insertSnippet(id, ciphertextB64, bucket) {
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/${TABLE}`, {
+    method: "POST",
+    headers: { ...sbHeaders(), "prefer": "return=minimal" },
+    body: JSON.stringify({ id, ciphertext: ciphertextB64, bucket }),
+  });
+  if (!r.ok) throw new Error(`save failed: ${r.status} ${await r.text()}`);
+}
+
+async function fetchSnippet(id) {
+  const url = `${SUPABASE_URL}/rest/v1/${TABLE}?id=eq.${encodeURIComponent(id)}&select=ciphertext,bucket,created_at`;
+  const r = await fetch(url, { headers: sbHeaders() });
+  if (!r.ok) throw new Error(`fetch failed: ${r.status} ${await r.text()}`);
+  const rows = await r.json();
+  if (!rows.length) throw new Error("Not found — expired or never existed.");
+  return rows[0];
+}
+
+function expiryFromRow(row) {
+  return new Date(new Date(row.created_at).getTime() + row.bucket * 3600 * 1000);
+}
+
+// ---------- routing ----------
+function parseRoute() {
+  const path = location.pathname.replace(/^\/+/, "").split("/")[0];
+  const id = /^[A-Za-z0-9_-]{8,}$/.test(path) ? path : null;
+  const frag = location.hash.startsWith("#") ? location.hash.slice(1) : "";
+  return { id, frag };
+}
+
+// ---------- composer wiring ----------
+const MAX_PLAINTEXT_BYTES = 49152;
+function syncStats() {
+  const t = $("text").value;
+  const bytes = enc.encode(t).length;
+  const fmt = (b) => b < 1024 ? `${b} B` : `${(b/1024).toFixed(b < 10240 ? 1 : 0)} KB`;
+  $("stats").textContent = `${fmt(bytes)} / 48 KB`;
+  $("stats").classList.toggle("near", bytes > MAX_PLAINTEXT_BYTES * 0.8 && bytes <= MAX_PLAINTEXT_BYTES);
+  $("stats").classList.toggle("over", bytes > MAX_PLAINTEXT_BYTES);
+  $("create").disabled = !t || bytes > MAX_PLAINTEXT_BYTES;
+  $("clear").disabled = !t;
+}
+
+$("text").addEventListener("input", syncStats);
+
+$("clear").addEventListener("click", () => {
+  $("text").value = "";
+  $("userKey").value = randomKey();
+  $("result").classList.add("hidden");
+  $("err1").textContent = "";
+  syncStats();
+});
+
+$("rollKey").addEventListener("click", () => {
+  $("userKey").value = randomKey();
+});
+
+$("create").addEventListener("click", async () => {
+  $("err1").textContent = "";
+  $("result").classList.add("hidden");
+  const text = $("text").value;
+  if (!text) { $("err1").textContent = "Nothing to encrypt — type or paste some text first."; return; }
+
+  const fragment = $("userKey").value;
+  const bucket = parseInt($("ttl").value, 10);
+
+  $("create").disabled = true;
+  $("create").textContent = "Encrypting…";
+  try {
+    const id = b64u.enc(rand(9)); // 12 chars
+    const payload = await encryptText(text, fragment);
+    const ctB64 = b64u.enc(payload);
+    if (ctB64.length > 65536) {
+      throw new Error("Text too large — limit is ~48 KB after encryption.");
+    }
+    await insertSnippet(id, ctB64, bucket);
+    const fullUrl = `${location.origin}/${id}#${fragment}`;
+    const urlNoKey = `${location.origin}/${id}`;
+    const expiresAt = new Date(Date.now() + bucket * 3600 * 1000);
+    $("url").textContent = fullUrl;
+    $("urlNoKey").textContent = urlNoKey;
+    $("keyOnly").textContent = fragment;
+    try {
+      $("qrWrap").innerHTML = qrToSvg(qrEncode(fullUrl)) +
+        '<div class="qr-label">Scan with another device to open this link.</div>';
+    } catch (_) {
+      $("qrWrap").innerHTML = '';
+    }
+    const ttlLabel = bucket === 1 ? "1 hour" : bucket === 6 ? "6 hours" : bucket === 24 ? "1 day" : "7 days";
+    const timeStr = expiresAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    $("exp").textContent = `Expires in ${ttlLabel} (${timeStr})`;
+    $("result").classList.remove("hidden");
+    $("result").scrollIntoView({ behavior: "smooth", block: "nearest" });
+    $("userKey").value = randomKey();
+  } catch (e) {
+    $("err1").textContent = String(e.message || e);
+  } finally {
+    $("create").disabled = false;
+    $("create").textContent = "Generate link";
+  }
+});
+
+function wireCopy(btnId, srcId, label) {
+  $(btnId).addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText($(srcId).textContent);
+      $(btnId).textContent = "Copied";
+    } catch (_) {
+      $(btnId).textContent = "Failed";
+    }
+    setTimeout(() => $(btnId).textContent = label, 1200);
+  });
+}
+wireCopy("copy", "url", "Copy link");
+wireCopy("copyUrlNoKey", "urlNoKey", "Copy link");
+wireCopy("copyKey", "keyOnly", "Copy key");
+
+$("vnew").addEventListener("click", () => { location.href = "/"; });
+
+// ---------- viewer ----------
+async function showViewer(id, fragment) {
+  $("composerView").classList.add("hidden");
+  $("viewerView").classList.remove("hidden");
+  $("err2").textContent = "";
+  $("vLoading").classList.remove("hidden");
+  try {
+    const row = await fetchSnippet(id);
+    const payload = b64u.dec(row.ciphertext);
+    const text = await decryptText(payload, fragment);
+    $("vLoading").classList.add("hidden");
+    $("keyPrompt").classList.add("hidden");
+    $("viewerCard").classList.remove("hidden");
+    $("view").textContent = text;
+    const exp = expiryFromRow(row);
+    const expStr = exp.toLocaleDateString() + " " + exp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    $("vmeta").textContent = `Decrypted locally · expires ${expStr}`;
+    $("vcopy").onclick = async () => {
+      try {
+        await navigator.clipboard.writeText(text);
+        $("vcopy").textContent = "Copied";
+      } catch (_) {
+        $("vcopy").textContent = "Failed";
+      }
+      setTimeout(() => $("vcopy").textContent = "Copy text", 1200);
+    };
+  } catch (e) {
+    $("vLoading").classList.add("hidden");
+    $("err2").textContent = "Decryption failed: " + String(e.message || e);
+  }
+}
+
+function showKeyPrompt(id) {
+  $("composerView").classList.add("hidden");
+  $("viewerView").classList.remove("hidden");
+  $("viewerCard").classList.add("hidden");
+  $("keyPrompt").classList.remove("hidden");
+  $("vTitle").textContent = "Enter the decryption key.";
+  $("vLede").textContent = "The URL has the snippet ID but no key. Paste the key you received separately to decrypt locally.";
+
+  const tryUnlock = async () => {
+    const k = $("keyInput").value.trim();
+    if (!k) { $("err2").textContent = "Paste the decryption key first."; return; }
+    $("err2").textContent = "";
+    $("unlock").disabled = true;
+    try {
+      await showViewer(id, k);
+    } finally {
+      $("unlock").disabled = false;
+    }
+  };
+  $("unlock").onclick = tryUnlock;
+  $("keyInput").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); tryUnlock(); }
+  });
+  setTimeout(() => $("keyInput").focus(), 0);
+}
+
+// ---------- init ----------
+(function init() {
+  $("userKey").value = randomKey();
+  syncStats();
+  const auditUrl = $("auditUrl");
+  if (auditUrl) {
+    auditUrl.href = location.origin + "/";
+    auditUrl.textContent = location.origin + "/";
+  }
+  const r = parseRoute();
+  if (r.id && r.frag) showViewer(r.id, r.frag);
+  else if (r.id) showKeyPrompt(r.id);
+})();
+</script>
+</body>
+</html>
