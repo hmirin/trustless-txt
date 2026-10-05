@@ -86,6 +86,7 @@ jobs:
         env:
           HTML_SHA256: ${{ steps.digest.outputs.sha256 }}
           ATTESTATION_URL: ${{ steps.attest.outputs.attestation-url }}
+          SITE_URL: ${{ vars.SITE_URL }}
         run: |
           {
             echo '# Deploy verification'
@@ -101,7 +102,7 @@ jobs:
             echo 'Verify the downloaded HTML with:'
             echo
             echo '```sh'
-            echo 'curl -s "$SITE_URL/" -o index.html && gh attestation verify index.html --repo hmirin/trustless-txt'
+            echo "curl -s ${SITE_URL%/}/ -o index.html && gh attestation verify index.html --repo $GITHUB_REPOSITORY"
             echo 'shasum -a 256 index.html'
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"

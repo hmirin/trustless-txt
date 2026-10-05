@@ -1,5 +1,7 @@
 # trustless.txt
 
+Encrypted text that deletes itself. **Live at <https://text.numeri.xyz/>**
+
 trustless.txt encrypts text in your browser and stores only ciphertext in Cloudflare D1. The browser keeps the decryption key in the URL fragment. The Worker receives ciphertext and TTL when saving, then generates the ID and expiration timestamp. It never receives plaintext or the key.
 
 ## Threat model
@@ -50,9 +52,15 @@ The GitHub deploy workflow stays skipped until the repository variable `SITE_URL
 
 The deploy workflow checks that `/` and a random snippet path serve the same bytes as `public/index.html`. It writes the HTML SHA-256 to the job summary. Artifact attestations are created only for public repositories.
 
-Download and verify the published HTML:
+Download and verify the HTML served by the public instance:
 
 ```sh
-curl -s "$SITE_URL/" -o index.html && gh attestation verify index.html --repo hmirin/trustless-txt
+curl -s https://text.numeri.xyz/ -o index.html && gh attestation verify index.html --repo hmirin/trustless-txt
 shasum -a 256 index.html
 ```
+
+Each deploy run lists the expected SHA-256 in its job summary.
+
+## License
+
+[MIT](LICENSE)
