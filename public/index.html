@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="description" content="End-to-end encrypted text snippets. AES-256-GCM in your browser. One auditable static HTML file — no backend code.">
+<meta name="description" content="End-to-end encrypted text snippets. AES-256-GCM in your browser. One auditable static HTML file, backed by a small Worker.">
 <meta property="og:type" content="website">
 <meta property="og:title" content="trustless.txt — end-to-end encrypted text snippets">
 <meta property="og:description" content="Share text across devices without trusting us. AES-256-GCM in your browser, one auditable HTML file.">
@@ -14,7 +14,7 @@
   content="default-src 'none';
            script-src 'unsafe-inline';
            style-src 'unsafe-inline';
-           connect-src https://YOUR_PROJECT.supabase.co;
+           connect-src 'self';
            img-src 'none';
            base-uri 'none';
            form-action 'none';">
@@ -463,7 +463,7 @@
         </li>
         <li>
           <h3>Server stores ciphertext only</h3>
-          <p>Supabase receives <code>{id, ciphertext, bucket}</code>. Row-level security blocks update and delete; <code>pg_cron</code> purges expired rows every 5 minutes.</p>
+          <p>The Worker stores <code>{id, ciphertext, created_at, expires_at}</code>. It cannot read plaintext; a scheduled job purges expired rows every 15 minutes.</p>
         </li>
         <li>
           <h3>Key travels in the URL fragment</h3>
@@ -471,20 +471,20 @@
         </li>
         <li>
           <h3>Auto-expires, then gone</h3>
-          <p>Ciphertext is deleted on TTL. After that no recovery is possible — the key alone is useless without the data.</p>
+          <p>After expiry, the server stops returning the ciphertext; the scheduled job then deletes it. Once deleted, no recovery is possible — the key alone is useless without the data.</p>
         </li>
       </ol>
 
       <div class="stack" aria-label="Tech stack">
         <div>
           <div class="label">Host</div>
-          <div class="name">Cloudflare Pages</div>
-          <div class="desc">Static delivery, no compute.</div>
+          <div class="name">Cloudflare Workers</div>
+          <div class="desc">Static delivery and API requests.</div>
         </div>
         <div>
           <div class="label">Database</div>
-          <div class="name">Supabase Postgres</div>
-          <div class="desc">Ciphertext only · RLS · pg_cron purge.</div>
+          <div class="name">Cloudflare D1</div>
+          <div class="desc">Ciphertext only · expiry filtering · scheduled purge.</div>
         </div>
         <div>
           <div class="label">Crypto</div>
@@ -503,7 +503,7 @@
         </div>
         <div class="card item">
           <h3>Watch the network</h3>
-          <p>Open DevTools → Network. The only outbound request goes to <code>*.supabase.co/rest/v1/snippets</code>. CSP <code>connect-src</code> enforces it.</p>
+          <p>Open DevTools → Network. Snippet requests go to <code>/api/snippets</code> on this site. CSP <code>connect-src</code> enforces it.</p>
         </div>
         <div class="card item">
           <h3>Audit with Claude Code</h3>
@@ -511,7 +511,7 @@
         </div>
         <div class="card item">
           <h3>Re-host it</h3>
-          <p>Don't trust this domain? Drop <code>index.html</code> on your own static host. Same code, your own infrastructure, same Supabase backend (or your own).</p>
+          <p>Don't trust this domain? Host the HTML and Worker on infrastructure you control.</p>
         </div>
       </div>
     </section>
@@ -560,10 +560,6 @@
 "use strict";
 
 // ---------- config ----------
-const SUPABASE_URL = "https://YOUR_PROJECT.supabase.co";
-const SUPABASE_ANON_KEY = "REDACTED_ANON_KEY";
-const TABLE = "snippets";
-
 // Target: ~128-bit security against offline brute-force of the URL fragment.
 // 18 chars × log2(70) ≈ 110.3 bit raw entropy, plus PBKDF2 600k iter ≈ +19.2 bit
 // ⇒ ≈ 129.5 bit effective. No salt is needed because the key is fully random and
@@ -861,33 +857,39 @@ function qrToSvg(matrix, scale = 4, margin = 4) {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${total} ${total}" shape-rendering="crispEdges" aria-hidden="true"><rect width="100%" height="100%" fill="#fff"/><path d="${path}" fill="#000"/></svg>`;
 }
 
-// ---------- supabase REST ----------
-const sbHeaders = () => ({
-  "apikey": SUPABASE_ANON_KEY,
-  "authorization": `Bearer ${SUPABASE_ANON_KEY}`,
-  "content-type": "application/json",
-});
+// ---------- snippets API ----------
+function apiError(response) {
+  const messages = {
+    400: "The snippet request is invalid.",
+    404: "Not found — expired or never existed.",
+    413: "Encrypted text is too large. Try a shorter message.",
+    415: "This browser could not send the snippet in the expected format.",
+    429: "Too many snippets from this IP. Wait a minute and try again.",
+    503: "Snippet storage is full or temporarily unavailable. Try again later.",
+  };
+  const error = new Error(messages[response.status] || "Could not submit the snippet. Try again.");
+  error.isApiError = true;
+  return error;
+}
 
-async function insertSnippet(id, ciphertextB64, bucket) {
-  const r = await fetch(`${SUPABASE_URL}/rest/v1/${TABLE}`, {
+async function insertSnippet(ciphertextB64, ttlHours) {
+  const r = await fetch("/api/snippets", {
     method: "POST",
-    headers: { ...sbHeaders(), "prefer": "return=minimal" },
-    body: JSON.stringify({ id, ciphertext: ciphertextB64, bucket }),
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ ciphertext: ciphertextB64, ttl_hours: ttlHours }),
   });
-  if (!r.ok) throw new Error(`save failed: ${r.status} ${await r.text()}`);
+  if (!r.ok) throw apiError(r);
+  return r.json();
 }
 
 async function fetchSnippet(id) {
-  const url = `${SUPABASE_URL}/rest/v1/${TABLE}?id=eq.${encodeURIComponent(id)}&select=ciphertext,bucket,created_at`;
-  const r = await fetch(url, { headers: sbHeaders() });
-  if (!r.ok) throw new Error(`fetch failed: ${r.status} ${await r.text()}`);
-  const rows = await r.json();
-  if (!rows.length) throw new Error("Not found — expired or never existed.");
-  return rows[0];
+  const r = await fetch(`/api/snippets/${encodeURIComponent(id)}`);
+  if (!r.ok) throw apiError(r);
+  return r.json();
 }
 
 function expiryFromRow(row) {
-  return new Date(new Date(row.created_at).getTime() + row.bucket * 3600 * 1000);
+  return new Date(row.expires_at);
 }
 
 // ---------- routing ----------
@@ -937,16 +939,16 @@ $("create").addEventListener("click", async () => {
   $("create").disabled = true;
   $("create").textContent = "Encrypting…";
   try {
-    const id = b64u.enc(rand(9)); // 12 chars
     const payload = await encryptText(text, fragment);
     const ctB64 = b64u.enc(payload);
     if (ctB64.length > 65536) {
       throw new Error("Text too large — limit is ~48 KB after encryption.");
     }
-    await insertSnippet(id, ctB64, bucket);
+    const created = await insertSnippet(ctB64, bucket);
+    const {id} = created;
     const fullUrl = `${location.origin}/${id}#${fragment}`;
     const urlNoKey = `${location.origin}/${id}`;
-    const expiresAt = new Date(Date.now() + bucket * 3600 * 1000);
+    const expiresAt = new Date(created.expires_at);
     $("url").textContent = fullUrl;
     $("urlNoKey").textContent = urlNoKey;
     $("keyOnly").textContent = fragment;
@@ -1015,7 +1017,8 @@ async function showViewer(id, fragment) {
     };
   } catch (e) {
     $("vLoading").classList.add("hidden");
-    $("err2").textContent = "Decryption failed: " + String(e.message || e);
+    const message = String(e.message || e);
+    $("err2").textContent = e.isApiError ? message : "Decryption failed: " + message;
   }
 }
 
