@@ -1,0 +1,107 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+  attestations: write
+
+jobs:
+  deploy:
+    if: vars.SITE_URL != ''
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      - name: Compute HTML digest
+        id: digest
+        run: echo "sha256=$(sha256sum public/index.html | cut -d ' ' -f 1)" >> "$GITHUB_OUTPUT"
+
+      - name: Attest public HTML build provenance
+        id: attest
+        if: ${{ !github.event.repository.private }}
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: public/index.html
+
+      - name: Apply D1 migrations
+        run: npx wrangler d1 migrations apply DB --remote
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Deploy Worker and assets
+        run: npx wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Verify deployed HTML bytes
+        env:
+          SITE_URL: ${{ vars.SITE_URL }}
+          EXPECTED_SHA256: ${{ steps.digest.outputs.sha256 }}
+        run: |
+          set -euo pipefail
+          site_url="${SITE_URL%/}"
+          random_id="$(openssl rand -base64 12 | tr '+/' '-_' | tr -d '\n=')"
+          [[ "$random_id" =~ ^[A-Za-z0-9_-]{16}$ ]]
+          root_file="$RUNNER_TEMP/root.html"
+          snippet_file="$RUNNER_TEMP/snippet.html"
+
+          for attempt in {1..12}; do
+            if curl --fail --silent --show-error --location "$site_url/" -o "$root_file" \
+              && curl --fail --silent --show-error --location \
+                -H 'Sec-Fetch-Mode: navigate' "$site_url/$random_id" -o "$snippet_file"; then
+              root_sha="$(sha256sum "$root_file" | cut -d ' ' -f 1)"
+              snippet_sha="$(sha256sum "$snippet_file" | cut -d ' ' -f 1)"
+              if [[ "$root_sha" == "$EXPECTED_SHA256" && "$snippet_sha" == "$EXPECTED_SHA256" ]]; then
+                exit 0
+              fi
+            fi
+            if (( attempt < 12 )); then sleep 5; fi
+          done
+
+          echo "Deployed root or SPA fallback HTML did not match $EXPECTED_SHA256" >&2
+          exit 1
+
+      - name: Write deployment summary
+        env:
+          HTML_SHA256: ${{ steps.digest.outputs.sha256 }}
+          ATTESTATION_URL: ${{ steps.attest.outputs.attestation-url }}
+        run: |
+          {
+            echo '# Deploy verification'
+            echo
+            echo "- Commit: \`$GITHUB_SHA\`"
+            echo "- HTML SHA-256: \`$HTML_SHA256\`"
+            if [[ -n "$ATTESTATION_URL" ]]; then
+              echo "- Attestation: $ATTESTATION_URL"
+            else
+              echo '- Attestation: not created (private repository)'
+            fi
+            echo
+            echo 'Verify the downloaded HTML with:'
+            echo
+            echo '```sh'
+            echo 'curl -s "$SITE_URL/" -o index.html && gh attestation verify index.html --repo hmirin/trustless-txt'
+            echo 'shasum -a 256 index.html'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
