@@ -1,6 +1,10 @@
 {
   "name": "trustless-txt",
   "private": true,
+  "description": "Encrypted text that deletes itself. Browser-side AES-256-GCM on Cloudflare Workers + D1.",
+  "license": "MIT",
+  "repository": "github:hmirin/trustless-txt",
+  "homepage": "https://text.numeri.xyz/",
   "version": "1.0.0",
   "type": "module",
   "scripts": {
