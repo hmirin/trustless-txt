@@ -3,558 +3,286 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="description" content="End-to-end encrypted text snippets. AES-256-GCM in your browser. One auditable static HTML file, backed by a small Worker.">
+<meta name="description" content="Encrypted text that deletes itself. AES-256-GCM in your browser; the key stays in the link's #fragment. One HTML file, attested on every release.">
 <meta property="og:type" content="website">
-<meta property="og:title" content="trustless.txt — end-to-end encrypted text snippets">
-<meta property="og:description" content="Share text across devices without trusting us. AES-256-GCM in your browser, one auditable HTML file.">
+<meta property="og:title" content="trustless.txt — encrypted text that deletes itself">
+<meta property="og:description" content="Text is encrypted in your browser before anything is sent. The key lives after the # in the link. Open source and attested.">
 <meta name="twitter:card" content="summary">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect x='7' y='14' width='18' height='13' rx='2' fill='%23111'/><path d='M11 14v-4a5 5 0 0 1 10 0v4' stroke='%23111' stroke-width='2.5' fill='none' stroke-linecap='round'/></svg>">
-<title>trustless.txt · end-to-end encrypted text snippets</title>
+<title>trustless.txt · encrypted text that deletes itself</title>
 <meta http-equiv="Content-Security-Policy"
   content="default-src 'none';
            script-src 'unsafe-inline';
            style-src 'unsafe-inline';
            connect-src 'self';
-           img-src 'none';
+           img-src data:;
            base-uri 'none';
            form-action 'none';">
 <style>
   :root {
     color-scheme: light dark;
-    --bg: #fafaf7;
-    --fg: #15171a;
-    --mut: #6b7280;
-    --bd: #e5e7eb;
-    --bd2: #d1d5db;
-    --acc: #111;
-    --accfg: #fafaf7;
-    --ok: #047857;
-    --warn: #b45309;
-    --err: #b91c1c;
-    --card: #ffffff;
-    --code-bg: #f3f4f6;
+    --page: #f5f4ee;
+    --surface: #fffefa;
+    --bar: #ecebe3;
+    --ink: #1b1b18;
+    --muted: #6b6a62;
+    --line: #d6d4c8;
+    --key-bg: #ffe9a8;
+    --key-ink: #5a3d00;
+    --danger: #a3271f;
+    --mono: ui-monospace, "SFMono-Regular", "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", "Helvetica Neue", sans-serif;
   }
   @media (prefers-color-scheme: dark) {
     :root {
-      --bg: #0e0f12;
-      --fg: #e7e9ee;
-      --mut: #8a92a0;
-      --bd: #23262d;
-      --bd2: #2e3239;
-      --acc: #e7e9ee;
-      --accfg: #0e0f12;
-      --ok: #34d399;
-      --warn: #fbbf24;
-      --err: #fb7185;
-      --card: #14161a;
-      --code-bg: #1a1d22;
+      --page: #121210; --surface: #191916; --bar: #22221e; --ink: #ecebe4; --muted: #9a988d;
+      --line: #33322c; --key-bg: rgba(255, 209, 102, .18); --key-ink: #ffd166; --danger: #ff9b8f;
     }
   }
+
   * { box-sizing: border-box; }
-  :focus-visible {
-    outline: 2px solid var(--acc);
-    outline-offset: 2px;
-    border-radius: 4px;
-  }
-  html, body { margin: 0; padding: 0; }
-  html { scroll-behavior: smooth; }
-  body {
-    background: var(--bg); color: var(--fg);
-    font: 15px/1.55 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-    -webkit-font-smoothing: antialiased;
-  }
-  a { color: inherit; }
-  code, pre, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; min-height: 100dvh; background: var(--page); color: var(--ink); font: 15px/1.65 var(--mono); }
+  a { color: inherit; text-underline-offset: 3px; }
+  :focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+  .shell { max-width: 720px; margin: 0 auto; padding: 0 16px; }
 
-  header.nav {
-    border-bottom: 1px solid var(--bd);
-    padding: 14px 20px;
-    display: flex; align-items: center; justify-content: space-between;
-    background: var(--bg);
-    position: sticky; top: 0; z-index: 10;
-  }
-  .brand { font-weight: 700; letter-spacing: -0.01em; font-size: 15px; }
-  .brand-icon {
-    width: 16px; height: 16px;
-    vertical-align: -3px; margin-right: 6px;
-    fill: currentColor;
-  }
-  .nav-right { display: flex; gap: 14px; font-size: 13px; color: var(--mut); }
-  .nav-right a { text-decoration: none; }
-  .nav-right a:hover { color: var(--fg); }
+  header.top { display: flex; justify-content: space-between; align-items: baseline; padding: 22px 0 0; gap: 12px; }
+  .brand { font-weight: 700; font-size: 17px; text-decoration: none; letter-spacing: -.01em; }
+  .brand .dot { color: var(--muted); font-weight: 400; }
+  nav.top-nav { display: flex; gap: 16px; font-size: 13px; color: var(--muted); }
 
-  main { max-width: 880px; margin: 0 auto; padding: 56px 20px 80px; }
-  @media (max-width: 640px) {
-    main { padding: 24px 16px 48px; }
-  }
+  .hero { padding: 44px 0 22px; }
+  h1 { font-size: clamp(22px, 4.6vw, 30px); line-height: 1.3; letter-spacing: -.02em; margin: 0 0 12px; font-weight: 700; }
+  .lede { margin: 0; color: var(--muted); max-width: 40em; font-family: var(--sans); font-size: 16px; line-height: 1.6; }
+  .lede code, .prose code { font-family: var(--mono); font-size: .92em; }
 
-  .hero { margin-bottom: 36px; }
-  .hero h1 {
-    font-size: clamp(28px, 4.5vw, 40px); line-height: 1.1; letter-spacing: -0.02em;
-    margin: 0 0 14px; font-weight: 700;
-    text-wrap: balance;
-  }
-  .hero h1 .nobr { white-space: nowrap; }
-  .hero h1 .us {
-    text-decoration: underline;
-    text-decoration-thickness: 3px;
-    text-decoration-color: var(--ok);
-    text-underline-offset: 4px;
-  }
-  .hero .lede { font-size: 16px; color: var(--mut); margin: 0; }
-  .hero .lede + .lede { margin-top: 8px; }
-  .hero .lede strong { color: var(--fg); font-weight: 600; }
-
-  .badges { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
-  .badge {
-    font-size: 12px; padding: 6px 10px; border-radius: 999px;
-    border: 1px solid var(--bd2); color: var(--fg);
-    background: transparent;
-  }
-  .badge.ok { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 35%, var(--bd2)); }
-
-  .card {
-    background: var(--card);
-    border: 1px solid var(--bd);
-    border-radius: 14px;
-    padding: 18px;
-  }
-
-  .composer .head {
-    display: flex; align-items: center; justify-content: flex-end;
-    border-bottom: 1px solid var(--bd); padding-bottom: 10px; margin-bottom: 12px;
-  }
-  .composer .stats { font-size: 12px; color: var(--mut); }
-  .composer .stats.near { color: var(--warn); }
-  .composer .stats.over { color: var(--err); }
-
+  .file { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+  .file-bar { display: flex; justify-content: space-between; gap: 12px; background: var(--bar); border-bottom: 1px solid var(--line); padding: 7px 12px; font-size: 13px; color: var(--muted); }
+  .file-bar .name { color: var(--ink); }
+  .bytes[data-level="near"] { color: var(--key-ink); }
+  .bytes[data-level="over"] { color: var(--danger); }
   textarea {
-    width: 100%; min-height: 280px; resize: vertical;
-    border: none; outline: none; background: transparent; color: var(--fg);
-    font: 13.5px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace;
-    padding: 0;
+    display: block; width: 100%; min-height: 240px; resize: vertical; border: 0; padding: 16px; margin: 0;
+    background: transparent; color: var(--ink); font: 15px/1.65 var(--mono);
   }
-  @media (max-width: 640px) {
-    textarea { min-height: 200px; }
-  }
+  textarea:focus { outline: none; }
+  .file-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; border-top: 1px solid var(--line); padding: 12px; }
+  .file-foot.bare { border: 0; padding: 14px 0 0; }
 
-  .controls {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
-    margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--bd);
-  }
-  @media (max-width: 640px) { .controls { grid-template-columns: 1fr; } }
-  .field label { display: block; font-size: 12px; color: var(--mut); margin-bottom: 6px; letter-spacing: 0.02em; text-transform: uppercase; }
-  .field select, .field input[type=text] {
-    width: 100%; padding: 9px 12px; border: 1px solid var(--bd2); border-radius: 8px;
-    background: transparent; color: var(--fg); font: inherit;
-  }
-  .field input[type=text].mono { font-family: ui-monospace, monospace; font-size: 13px; }
-  .field input[readonly] { background: var(--code-bg); cursor: default; }
-  .field .hint { font-size: 11.5px; color: var(--mut); margin-top: 6px; line-height: 1.4; }
-  .field .chips { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
-  .field .chips .hint { margin: 0; }
-  .field .chips .roll-btn {
-    padding: 3px 9px; font-size: 11px; margin-left: auto;
-    border-radius: 6px;
-  }
+  fieldset { border: 0; margin: 0; padding: 0; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  legend { float: left; color: var(--muted); font-size: 13px; margin-right: 2px; }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
+  .seg label { position: relative; }
+  .seg label + label { border-left: 1px solid var(--line); }
+  .seg input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+  .seg span { display: block; padding: 5px 11px; font-size: 13px; white-space: nowrap; }
+  .seg input:checked + span { background: var(--ink); color: var(--page); }
+  .seg input:focus-visible + span { outline: 2px solid var(--ink); outline-offset: -4px; }
 
-  .actions {
-    display: flex; gap: 10px; align-items: center; justify-content: flex-end;
-    margin-top: 18px;
-  }
   button {
-    appearance: none; cursor: pointer; font: inherit;
-    padding: 10px 16px; border-radius: 8px; border: 1px solid var(--bd2);
-    background: transparent; color: var(--fg);
+    font: 14px var(--mono); cursor: pointer; border-radius: 4px; padding: 8px 14px;
+    border: 1px solid var(--ink); background: transparent; color: var(--ink);
   }
-  button.primary {
-    background: var(--acc); color: var(--accfg); border-color: transparent;
-  }
-  button:disabled { opacity: 0.5; cursor: not-allowed; }
-  button.ghost { color: var(--mut); }
+  button:hover { background: var(--bar); }
+  button.primary { background: var(--ink); color: var(--page); }
+  button.primary:hover { opacity: .88; background: var(--ink); }
+  button:disabled { opacity: .35; cursor: not-allowed; }
+  button.small { font-size: 13px; padding: 4px 10px; }
+  button.quiet { border-color: var(--line); }
+  button.link { border: 0; padding: 0; text-decoration: underline; text-underline-offset: 3px; color: var(--muted); }
+  button.link:hover { background: none; color: var(--ink); }
+  .err { color: var(--danger); font-size: 13px; margin: 10px 0 0; }
+  .err:empty { display: none; }
 
-  .out {
-    margin-top: 16px;
-    border: 1px solid var(--bd); border-radius: 10px; padding: 0;
-    background: var(--card);
-    overflow: hidden;
-  }
-  @keyframes resultIn {
-    from { opacity: 0; transform: translateY(-4px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-  .out:not(.hidden) { animation: resultIn 200ms ease-out; }
-  @media (prefers-reduced-motion: reduce) {
-    .out:not(.hidden) { animation: none; }
-  }
-  .out .result-head {
-    display: flex; align-items: center; gap: 8px;
-    padding: 10px 14px;
-    background: color-mix(in srgb, var(--ok) 8%, transparent);
-    border-bottom: 1px solid var(--bd);
-    font-size: 13px;
-  }
-  .out .result-head .ok-dot { color: var(--ok); }
-  .out .result-head .exp-inline { color: var(--mut); margin-left: auto; font-size: 12px; }
-  .out .share-block { padding: 14px; }
-  .out .share-block + .share-block { border-top: 1px solid var(--bd); }
-  .out .rec-pill {
-    display: inline-block;
-    font-size: 10.5px; font-weight: 600;
-    letter-spacing: 0.04em; text-transform: uppercase;
-    padding: 2px 7px; border-radius: 999px;
-    background: color-mix(in srgb, var(--ok) 12%, transparent);
-    color: var(--ok);
-    margin-right: 6px; vertical-align: 1px;
-  }
-  .out .share-block.secondary { background: color-mix(in srgb, var(--warn) 6%, transparent); }
-  .out .share-block.secondary .block-title { color: var(--mut); }
-  .out .share-block.secondary .block-title .sub { color: var(--warn); }
-  .out .block-title { font-size: 13px; margin-bottom: 12px; }
-  .out .block-title strong { font-weight: 600; }
-  .out .block-title .sub { display: block; color: var(--mut); font-size: 12px; font-weight: 400; margin-top: 2px; }
-  .out .kv + .kv { margin-top: 10px; }
-  .out .kv-label { font-size: 11.5px; color: var(--mut); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
-  .out .kv-row { display: flex; align-items: stretch; gap: 6px; }
-  .out .kv-row code {
-    flex: 1; min-width: 0;
-    font-family: ui-monospace, monospace; font-size: 13px; word-break: break-all; user-select: all;
-    background: var(--code-bg); padding: 8px 12px; border-radius: 6px; border: 1px solid var(--bd);
-    display: flex; align-items: center;
-  }
-  .out .inline-copy {
-    padding: 0 12px; font-size: 12px; border-radius: 6px;
-    border: 1px solid var(--bd2); background: var(--card); color: var(--fg);
-    flex-shrink: 0;
-  }
-  .out .inline-copy:hover { background: var(--code-bg); }
-  .out .warn-text {
-    font-size: 12px; color: var(--warn); margin: 0 0 10px;
-    line-height: 1.5;
-  }
-  .out .qr-wrap {
-    margin-top: 12px; display: flex; align-items: center; gap: 12px;
-  }
-  .out .qr-wrap svg {
-    width: 128px; height: 128px; flex-shrink: 0;
-    border-radius: 6px; border: 1px solid var(--bd2);
-    background: #fff; padding: 4px; box-sizing: border-box;
-  }
-  .out .qr-wrap .qr-label {
-    font-size: 12px; color: var(--mut); line-height: 1.5;
-  }
-  .out .qr-wrap:empty { display: none; }
+  .url { font: 14px/1.55 var(--mono); word-break: break-all; }
+  .u-hash { color: var(--muted); padding: 0 1px; font-weight: 700; }
+  .u-key { background: var(--key-bg); color: var(--key-ink); padding: 0 2px; }
 
-  .err:not(:empty) {
-    margin-top: 12px;
-    padding: 10px 12px;
-    background: color-mix(in srgb, var(--err) 8%, transparent);
-    border: 1px solid color-mix(in srgb, var(--err) 35%, var(--bd2));
-    border-radius: 8px;
-    color: var(--err);
-    font-size: 13px;
-  }
+  .block { padding: 16px; }
+  .block + .block { border-top: 1px dashed var(--line); }
+  .block h2 { font-size: 14px; margin: 0 0 2px; }
+  .block h2::before { content: "## "; color: var(--muted); font-weight: 400; }
+  .block p { margin: 0 0 12px; color: var(--muted); font-size: 13px; }
+  .qr-row { display: flex; gap: 16px; align-items: flex-start; }
+  .qr { flex: 0 0 auto; width: 120px; border: 1px solid var(--line); background: #fff; }
+  .qr:empty { display: none; }
+  .qr svg { display: block; width: 100%; height: auto; }
+  .kv { display: grid; grid-template-columns: 44px 1fr auto; gap: 6px 10px; align-items: baseline; margin: 6px 0; }
+  .kv .k { color: var(--muted); font-size: 13px; }
+  .warn { font-size: 13px; color: var(--muted); margin: 10px 0 0; }
 
-  /* viewer */
-  #viewerView .hero { margin-bottom: 16px; }
-  #viewerView .hero h1 { font-size: 18px; font-weight: 600; margin-bottom: 6px; }
-  #viewerView .hero .lede { font-size: 13px; }
-  .v-loading { color: var(--mut); font-size: 13.5px; padding: 4px 0 8px; }
-  .viewer .head { font-size: 13px; color: var(--mut); margin-bottom: 8px; }
-  .viewer pre {
-    margin: 0; padding: 14px; border-radius: 10px;
-    background: var(--code-bg); border: 1px solid var(--bd);
-    white-space: pre-wrap; word-wrap: break-word;
-    font: 13.5px/1.55 ui-monospace, monospace;
-    max-height: 70vh; overflow: auto;
-  }
+  pre.plain { margin: 0; padding: 16px; white-space: pre-wrap; word-break: break-word; font: 15px/1.65 var(--mono); max-height: 60vh; overflow: auto; }
+  input.key { flex: 1 1 240px; min-width: 0; font: 15px var(--mono); padding: 8px 10px; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); color: var(--ink); }
 
-  /* stack strip */
-  .stack {
-    margin-top: 18px;
-    display: grid; grid-template-columns: repeat(3, 1fr); gap: 0;
-    border: 1px solid var(--bd); border-radius: 12px; overflow: hidden;
-    background: var(--card);
-  }
-  @media (max-width: 640px) { .stack { grid-template-columns: 1fr; } }
-  .stack > div { padding: 14px 16px; border-right: 1px solid var(--bd); }
-  .stack > div:last-child { border-right: none; }
+  .trust { margin-top: 60px; }
+  .trust h2 { font-size: 17px; margin: 0 0 8px; }
+  .trust h2::before { content: "## "; color: var(--muted); font-weight: 400; }
+  .prose { font-family: var(--sans); font-size: 15px; line-height: 1.65; color: var(--muted); margin: 0 0 16px; max-width: 40em; }
+  table.sees { width: 100%; border-collapse: collapse; font-size: 14px; margin: 0 0 20px; }
+  table.sees th, table.sees td { text-align: left; vertical-align: top; padding: 8px 10px; border: 1px solid var(--line); }
+  table.sees th { font-weight: 700; background: var(--bar); width: 50%; }
+  .anatomy { border: 1px solid var(--line); padding: 14px 16px; background: var(--surface); margin-bottom: 8px; }
+  .anatomy .marks { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; margin-top: 10px; font-size: 13px; color: var(--muted); }
+  .anatomy .marks b { color: var(--ink); }
+  pre.cmd { margin: 12px 0; padding: 14px 16px; font: 13.5px/1.7 var(--mono); background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--ink); overflow-x: auto; }
+  pre.cmd .p { color: var(--muted); user-select: none; }
+  .verify { margin-top: 36px; }
+  footer { margin-top: 56px; padding: 18px 0 28px; border-top: 1px solid var(--line); font-size: 13px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 20px; }
+
+  [data-show] { display: none; }
+  body[data-view="compose"] [data-show~="compose"],
+  body[data-view="result"] [data-show~="result"],
+  body[data-view="loading"] [data-show~="loading"],
+  body[data-view="view"] [data-show~="view"],
+  body[data-view="prompt"] [data-show~="prompt"],
+  body[data-view="missing"] [data-show~="missing"] { display: block; }
+
   @media (max-width: 640px) {
-    .stack > div { border-right: none; border-bottom: 1px solid var(--bd); }
-    .stack > div:last-child { border-bottom: none; }
+    .hero { padding: 28px 0 18px; }
+    .qr-row { flex-direction: column; }
+    .kv { grid-template-columns: 1fr auto; }
+    .kv .k { grid-column: 1 / -1; }
+    table.sees th { width: auto; }
   }
-  .stack .label {
-    font-size: 10.5px; color: var(--mut); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px;
-  }
-  .stack .name { font-size: 14px; font-weight: 600; }
-  .stack .desc { font-size: 12px; color: var(--mut); margin-top: 2px; }
-
-  /* trust section */
-  .trust { margin-top: 56px; scroll-margin-top: 70px; }
-  .trust h2 { font-size: 20px; letter-spacing: -0.01em; margin: 0 0 14px; }
-  .trust .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-  @media (max-width: 720px) { .trust .grid { grid-template-columns: 1fr; } }
-  .trust .item h3 { font-size: 14px; margin: 0 0 6px; }
-  .trust .item p { margin: 0; color: var(--mut); font-size: 13.5px; line-height: 1.55; }
-  .trust .item code { background: var(--code-bg); padding: 2px 6px; border-radius: 4px; font-size: 12.5px; }
-
-  /* timeline (How it works) */
-  .timeline {
-    list-style: none; padding: 0; margin: 0;
-    counter-reset: step;
-    position: relative;
-  }
-  .timeline::before {
-    content: ""; position: absolute;
-    left: 14px; top: 16px; bottom: 16px;
-    width: 2px; background: var(--bd);
-  }
-  .timeline > li {
-    counter-increment: step;
-    position: relative;
-    margin-left: 40px;
-    padding: 16px 18px;
-    margin-bottom: 12px;
-    background: var(--card);
-    border: 1px solid var(--bd);
-    border-radius: 14px;
-  }
-  .timeline > li:last-child { margin-bottom: 0; }
-  .timeline > li::before {
-    content: counter(step);
-    position: absolute;
-    left: -40px; top: 16px;
-    width: 30px; height: 30px;
-    border-radius: 50%;
-    background: var(--acc); color: var(--accfg);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 13px; font-weight: 600;
-    z-index: 1;
-  }
-  .timeline h3 { font-size: 14px; margin: 0 0 6px; }
-  .timeline p { margin: 0; color: var(--mut); font-size: 13.5px; line-height: 1.55; }
-  .timeline code { background: var(--code-bg); padding: 2px 6px; border-radius: 4px; font-size: 12.5px; }
-
-  footer { color: var(--mut); font-size: 12px; text-align: center; padding: 30px 0 10px; }
-
-  .hidden { display: none !important; }
 </style>
 </head>
-<body>
+<body data-view="compose">
+<div class="shell">
+  <header class="top">
+    <a class="brand" href="/">trustless<span class="dot">.</span>txt</a>
+    <nav class="top-nav"><a href="#verify" data-home>verify</a><a href="https://github.com/hmirin/trustless-txt">source</a></nav>
+  </header>
 
-<header class="nav">
-  <div class="brand">
-    <svg class="brand-icon" viewBox="0 0 32 32" aria-hidden="true">
-      <rect x="7" y="14" width="18" height="13" rx="2"/>
-      <path d="M11 14v-4a5 5 0 0 1 10 0v4" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
-    </svg>
-    trustless.txt
-  </div>
-  <nav class="nav-right">
-    <a href="#how">How it works</a>
-    <a href="#verify">Verify</a>
-    <a href="https://github.com/" target="_blank" rel="noreferrer">Source</a>
-  </nav>
-</header>
-
-<main>
-
-  <!-- composer view -->
-  <section id="composerView">
-    <div class="hero">
-      <h1>Share text across devices <span class="nobr">without trusting <span class="us">us</span>.</span></h1>
-      <p class="lede">
-        <strong>Your secret never leaves here.</strong> No backend code, no service worker — just one static HTML file you can audit byte for byte. Don't take our word for it: ask your Claude to audit <a id="auditUrl" href="/">this page</a>.
-      </p>
-      <div class="badges">
-        <span class="badge ok"><span aria-hidden="true">●</span> End-to-End Encrypted</span>
-        <span class="badge ok"><span aria-hidden="true">●</span> Runs in your browser</span>
-        <span class="badge ok"><span aria-hidden="true">●</span> Auto-expires</span>
+  <main>
+    <section data-show="compose">
+      <div class="hero">
+        <h1>Encrypted text that deletes itself.</h1>
+        <p class="lede">Your text is locked in this browser before anything is sent. The key lives after the <code>#</code> in the link, a part browsers never send to a server.</p>
       </div>
-    </div>
-
-    <div class="card composer">
-      <div class="head">
-        <div class="stats" id="stats">0 B / 48 KB</div>
-      </div>
-      <textarea id="text" aria-label="Text to encrypt" placeholder="Paste or type your text here…"></textarea>
-
-      <div class="controls">
-        <div class="field">
-          <label for="ttl">Expiration</label>
-          <select id="ttl">
-            <option value="1" selected>1 hour</option>
-            <option value="6">6 hours</option>
-            <option value="24">1 day</option>
-            <option value="168">7 days</option>
-          </select>
-          <div class="hint">After expiration the ciphertext is permanently deleted.</div>
-        </div>
-
-        <div class="field" id="keyField">
-          <label for="userKey">Decryption key</label>
-          <input type="text" id="userKey" class="mono" spellcheck="false" autocomplete="off" readonly>
-          <div class="chips">
-            <span class="hint">Random 18-char key — never leaves your browser.</span>
-            <button type="button" id="rollKey" class="ghost roll-btn" aria-label="Regenerate key"><span aria-hidden="true">↻</span> regenerate</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="actions">
-        <button class="ghost" id="clear" disabled>Clear</button>
-        <button class="primary" id="create" disabled>Generate link</button>
-      </div>
-
-      <div id="result" class="out hidden">
-        <div class="result-head">
-          <span class="ok-dot" aria-hidden="true">●</span>
-          <span>Encrypted &amp; saved.</span>
-          <span class="exp-inline" id="exp"></span>
-        </div>
-
-        <div class="share-block recommended">
-          <div class="block-title">
-            <span class="rec-pill">Recommended</span>
-            Send these on <strong>two different channels</strong>
-            <span class="sub">e.g. link in chat, key by SMS — so a single leaked channel can't decrypt.</span>
-          </div>
-
-          <div class="kv">
-            <div class="kv-label">1 · Link</div>
-            <div class="kv-row">
-              <code id="urlNoKey"></code>
-              <button id="copyUrlNoKey" class="inline-copy">Copy link</button>
+      <div class="file">
+        <div class="file-bar"><span class="name">snippet.txt</span><span class="bytes" id="bytes">0 B / 48 KB</span></div>
+        <textarea id="text" aria-label="Text to encrypt" placeholder="paste or type text…" spellcheck="false"></textarea>
+        <div class="file-foot">
+          <fieldset>
+            <legend>delete after</legend>
+            <div class="seg">
+              <label><input type="radio" name="ttl" value="1" checked><span>1h</span></label>
+              <label><input type="radio" name="ttl" value="6"><span>6h</span></label>
+              <label><input type="radio" name="ttl" value="24"><span>1d</span></label>
+              <label><input type="radio" name="ttl" value="168"><span>7d</span></label>
             </div>
-          </div>
+          </fieldset>
+          <button class="primary" id="create" disabled>Encrypt → link</button>
+        </div>
+      </div>
+      <p class="err" id="err" role="alert" aria-live="polite"></p>
+    </section>
 
-          <div class="kv">
-            <div class="kv-label">2 · Key</div>
-            <div class="kv-row">
-              <code id="keyOnly"></code>
-              <button id="copyKey" class="inline-copy">Copy key</button>
+    <section data-show="result">
+      <div class="hero">
+        <h1>Link ready.</h1>
+        <p class="lede" id="exp"></p>
+      </div>
+      <div class="file">
+        <div class="file-bar"><span class="name">share</span><span>encrypted · AES-256-GCM</span></div>
+        <div class="block">
+          <h2>your other devices</h2>
+          <p>One link opens it. Scan the code or paste the link.</p>
+          <div class="qr-row">
+            <div class="qr" id="qr"></div>
+            <div>
+              <div class="url" id="fullUrl"></div>
+              <p class="warn">Anyone who sees this whole link can read the text.</p>
+              <button class="small" id="copyFull">Copy link</button>
             </div>
           </div>
         </div>
-
-        <div class="share-block secondary">
-          <div class="block-title">
-            Or copy as one link <span class="sub">(less safe)</span>
-          </div>
-          <p class="warn-text">
-            <strong>Heads up:</strong> this URL includes the key. When opened, the key never reaches our server — browsers don't send anything after <code>#</code> over the network. But anyone (or any web service) who sees this URL — chat history, link previews, screen shares, browser history — can decrypt. Use only for throwaway content.
-          </p>
-          <div class="kv-row">
-            <code id="url"></code>
-            <button id="copy" class="inline-copy">Copy link</button>
-          </div>
-          <div class="qr-wrap" id="qrWrap"></div>
+        <div class="block">
+          <h2>someone else</h2>
+          <p>Send the link and the key on different channels, so one leaked chat isn't enough.</p>
+          <div class="kv"><span class="k">link</span><span class="url" id="linkOnly"></span><button class="small quiet" id="copyLink">Copy</button></div>
+          <div class="kv"><span class="k">key</span><span class="url"><span class="u-key" id="keyOnly"></span></span><button class="small quiet" id="copyKey">Copy</button></div>
         </div>
       </div>
-      <div id="err1" class="err" role="alert" aria-live="polite"></div>
-    </div>
+      <div class="file-foot bare">
+        <button class="js-new">Write another</button>
+      </div>
+    </section>
 
-    <section id="how" class="trust">
-      <h2>How it works</h2>
-      <ol class="timeline">
-        <li>
-          <h3>Encrypted in your browser</h3>
-          <p>A fresh 18-character key drawn from <code>crypto.getRandomValues</code> is stretched with PBKDF2-SHA256 (600,000 iterations) to a 256-bit AES-GCM key. Effective brute-force cost ≈ 2<sup>128</sup>. Encryption happens before any network call.</p>
-        </li>
-        <li>
-          <h3>Server stores ciphertext only</h3>
-          <p>The Worker stores <code>{id, ciphertext, created_at, expires_at}</code>. It cannot read plaintext; a scheduled job purges expired rows every 15 minutes.</p>
-        </li>
-        <li>
-          <h3>Key travels in the URL fragment</h3>
-          <p>The part after <code>#</code> is never sent over HTTP. The server cannot see it, log it, or hand it to anyone.</p>
-        </li>
-        <li>
-          <h3>Auto-expires, then gone</h3>
-          <p>After expiry, the server stops returning the ciphertext; the scheduled job then deletes it. Once deleted, no recovery is possible — the key alone is useless without the data.</p>
-        </li>
-      </ol>
+    <section data-show="loading">
+      <div class="hero">
+        <h1>Decrypting…</h1>
+        <p class="lede">Fetching the encrypted text and unlocking it in this browser.</p>
+      </div>
+    </section>
 
-      <div class="stack" aria-label="Tech stack">
-        <div>
-          <div class="label">Host</div>
-          <div class="name">Cloudflare Workers</div>
-          <div class="desc">Static delivery and API requests.</div>
-        </div>
-        <div>
-          <div class="label">Database</div>
-          <div class="name">Cloudflare D1</div>
-          <div class="desc">Ciphertext only · expiry filtering · scheduled purge.</div>
-        </div>
-        <div>
-          <div class="label">Crypto</div>
-          <div class="name">Web Crypto API</div>
-          <div class="desc">AES-256-GCM · PBKDF2-SHA256 (600k).</div>
+    <section data-show="view">
+      <div class="hero">
+        <h1>Decrypted on this device.</h1>
+        <p class="lede" id="vExp"></p>
+      </div>
+      <div class="file">
+        <div class="file-bar"><span class="name">snippet.txt</span><span>key removed from address bar</span></div>
+        <pre class="plain" id="vText"></pre>
+        <div class="file-foot">
+          <button class="primary" id="vCopy">Copy text</button>
+          <button class="link js-new">write your own</button>
         </div>
       </div>
     </section>
 
-    <section id="verify" class="trust">
-      <h2>Verify it yourself</h2>
-      <div class="grid">
-        <div class="card item">
-          <h3>Read the source</h3>
-          <p>Open <code>view-source:</code> on this page. There is one HTML file. All JavaScript is inline. No bundlers, no opaque dependencies.</p>
-        </div>
-        <div class="card item">
-          <h3>Watch the network</h3>
-          <p>Open DevTools → Network. Snippet requests go to <code>/api/snippets</code> on this site. CSP <code>connect-src</code> enforces it.</p>
-        </div>
-        <div class="card item">
-          <h3>Audit with Claude Code</h3>
-          <p>Save the HTML, then run <code>claude</code> in the directory and ask: <em>"Audit index.html for the security claims on the homepage. Find any way the plaintext or key could leak."</em></p>
-        </div>
-        <div class="card item">
-          <h3>Re-host it</h3>
-          <p>Don't trust this domain? Host the HTML and Worker on infrastructure you control.</p>
+    <section data-show="prompt">
+      <div class="hero">
+        <h1>Paste the key to read this.</h1>
+        <p class="lede">This link came without its key. Paste the key you got separately. It is used only in this browser.</p>
+      </div>
+      <div class="file">
+        <div class="file-bar"><span class="name">key</span><span>18 characters</span></div>
+        <div class="file-foot" style="border:0">
+          <input class="key" id="keyInput" spellcheck="false" autocomplete="off" placeholder="paste key" aria-label="Decryption key">
+          <button class="primary" id="unlock">Decrypt</button>
         </div>
       </div>
+      <p class="err" id="pErr" role="alert" aria-live="polite"></p>
     </section>
 
-    <footer>
-      Single static HTML · No analytics · No cookies · No tracking
-    </footer>
-  </section>
-
-  <!-- viewer view -->
-  <section id="viewerView" class="hidden">
-    <div class="hero">
-      <h1 id="vTitle">Decrypted in your browser.</h1>
-      <p class="lede" id="vLede">The ciphertext was fetched from the server; the key from the URL fragment never left your device.</p>
-    </div>
-
-    <div class="v-loading hidden" id="vLoading" aria-live="polite">Fetching ciphertext…</div>
-
-    <!-- key prompt: shown when the URL has the ID but no #fragment -->
-    <div class="card composer hidden" id="keyPrompt">
-      <div class="field">
-        <label for="keyInput">Decryption key</label>
-        <input type="text" id="keyInput" class="mono" spellcheck="false" autocomplete="off"
-               placeholder="Paste the 18-char key you received separately">
-        <div class="hint">The key was sent to you separately (e.g. another channel). Paste it here to decrypt locally.</div>
+    <section data-show="missing">
+      <div class="hero">
+        <h1>404: nothing here anymore.</h1>
+        <p class="lede">This snippet expired or never existed. Expired snippets are deleted from the server and can't be recovered, even with the key.</p>
       </div>
-      <div class="actions">
-        <button class="primary" id="unlock">Decrypt</button>
-      </div>
-    </div>
+      <button class="primary js-new">Write a new one</button>
+    </section>
 
-    <div class="card viewer hidden" id="viewerCard">
-      <div class="head" id="vmeta"></div>
-      <pre id="view"></pre>
-      <div class="actions">
-        <button id="vcopy">Copy text</button>
-        <button class="primary" id="vnew">Create new</button>
+    <section class="trust" data-show="compose result">
+      <h2>what leaves your browser</h2>
+      <p class="prose">Each snippet gets a fresh random key and is encrypted here with AES-256-GCM. The server keeps the encrypted bytes until the time runs out, then deletes them.</p>
+      <table class="sees">
+        <tr><th>server gets</th><th>server never gets</th></tr>
+        <tr><td>encrypted text<br>size and expiry<br>your IP and request times</td><td>your text<br>the key</td></tr>
+      </table>
+      <div class="anatomy">
+        <div class="url"><span class="js-host">text.numeri.xyz</span>/Qm3xR8vT1aPz0LcW<span class="u-hash">#</span><span class="u-key">k3Y-p9!Qa7~mXb2Tz</span></div>
+        <div class="marks"><b>before #</b><span>sent to the server — which snippet</span><b>after #</b><span>stays in your browser — the key</span></div>
       </div>
-    </div>
-    <div id="err2" class="err" role="alert" aria-live="polite"></div>
-  </section>
 
-</main>
+      <div class="verify" id="verify">
+        <h2>verify this page</h2>
+        <p class="prose">A page can only be as honest as the server that sends it. This one is a single HTML file, built in public by GitHub Actions and signed on every release. Check that the copy you got is the published one:</p>
+        <pre class="cmd"><span class="p">$ </span>curl -s <span class="js-origin">https://text.numeri.xyz</span>/ -o index.html
+<span class="p">$ </span>gh attestation verify index.html --repo hmirin/trustless-txt</pre>
+        <p class="prose">Rather not trust any host? Run your own copy: one HTML file and a small Worker.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <span>trustless.txt · <a href="https://github.com/hmirin/trustless-txt">source</a> · <a href="https://github.com/hmirin/trustless-txt/attestations">attestations</a></span>
+    <span>hosted on <a href="https://numeri.xyz/">numeri.xyz</a></span>
+    <span>no accounts · no cookies · no analytics</span>
+  </footer>
+</div>
 
 <script>
 "use strict";
@@ -869,6 +597,7 @@ function apiError(response) {
   };
   const error = new Error(messages[response.status] || "Could not submit the snippet. Try again.");
   error.isApiError = true;
+  error.status = response.status;
   return error;
 }
 
@@ -900,166 +629,165 @@ function parseRoute() {
   return { id, frag };
 }
 
-// ---------- composer wiring ----------
+
+// ---------- views ----------
 const MAX_PLAINTEXT_BYTES = 49152;
-function syncStats() {
-  const t = $("text").value;
-  const bytes = enc.encode(t).length;
-  const fmt = (b) => b < 1024 ? `${b} B` : `${(b/1024).toFixed(b < 10240 ? 1 : 0)} KB`;
-  $("stats").textContent = `${fmt(bytes)} / 48 KB`;
-  $("stats").classList.toggle("near", bytes > MAX_PLAINTEXT_BYTES * 0.8 && bytes <= MAX_PLAINTEXT_BYTES);
-  $("stats").classList.toggle("over", bytes > MAX_PLAINTEXT_BYTES);
-  $("create").disabled = !t || bytes > MAX_PLAINTEXT_BYTES;
-  $("clear").disabled = !t;
+const TTL_LABELS = { 1: "1 hour", 6: "6 hours", 24: "1 day", 168: "7 days" };
+const host = location.host;
+let current = null; // { id, key }
+
+function setView(view) {
+  document.body.dataset.view = view;
+  window.scrollTo({ top: 0 });
 }
 
-$("text").addEventListener("input", syncStats);
+const fmtBytes = (b) => b < 1024 ? `${b} B` : `${(b / 1024).toFixed(b < 10240 ? 1 : 0)} KB`;
+const clock = (d) => d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
-$("clear").addEventListener("click", () => {
-  $("text").value = "";
-  $("userKey").value = randomKey();
-  $("result").classList.add("hidden");
-  $("err1").textContent = "";
-  syncStats();
-});
+function whenText(expiresAt) {
+  const mins = Math.max(1, Math.round((expiresAt - Date.now()) / 60000));
+  const unit = (n, one) => `${n} ${one}${n === 1 ? "" : "s"}`;
+  const left = mins < 60 ? `${mins} min` : mins < 1440 ? unit(Math.round(mins / 60), "hour") : unit(Math.round(mins / 1440), "day");
+  const day = mins >= 1440 ? " on " + expiresAt.toLocaleDateString([], { month: "short", day: "numeric" }) : "";
+  return { left, at: `${clock(expiresAt)}${day}` };
+}
 
-$("rollKey").addEventListener("click", () => {
-  $("userKey").value = randomKey();
-});
+function setUrlParts(el, id, key) {
+  el.textContent = "";
+  const base = document.createElement("span");
+  base.textContent = `${host}/${id}`;
+  const hash = document.createElement("span");
+  hash.className = "u-hash";
+  hash.textContent = "#";
+  const k = document.createElement("span");
+  k.className = "u-key";
+  k.textContent = key;
+  el.append(base, hash, k);
+}
 
-$("create").addEventListener("click", async () => {
-  $("err1").textContent = "";
-  $("result").classList.add("hidden");
+// ---------- composer ----------
+function syncComposer() {
+  const bytes = enc.encode($("text").value).length;
+  $("bytes").textContent = `${fmtBytes(bytes)} / 48 KB`;
+  $("bytes").dataset.level = bytes > MAX_PLAINTEXT_BYTES ? "over" : bytes > MAX_PLAINTEXT_BYTES * 0.8 ? "near" : "";
+  $("create").disabled = !$("text").value || bytes > MAX_PLAINTEXT_BYTES;
+}
+
+async function create() {
+  $("err").textContent = "";
   const text = $("text").value;
-  if (!text) { $("err1").textContent = "Nothing to encrypt — type or paste some text first."; return; }
-
-  const fragment = $("userKey").value;
-  const bucket = parseInt($("ttl").value, 10);
-
+  if (!text) return;
+  const ttlHours = Number(document.querySelector('input[name="ttl"]:checked').value);
   $("create").disabled = true;
   $("create").textContent = "Encrypting…";
   try {
-    const payload = await encryptText(text, fragment);
-    const ctB64 = b64u.enc(payload);
-    if (ctB64.length > 65536) {
-      throw new Error("Text too large — limit is ~48 KB after encryption.");
-    }
-    const created = await insertSnippet(ctB64, bucket);
-    const {id} = created;
-    const fullUrl = `${location.origin}/${id}#${fragment}`;
-    const urlNoKey = `${location.origin}/${id}`;
-    const expiresAt = new Date(created.expires_at);
-    $("url").textContent = fullUrl;
-    $("urlNoKey").textContent = urlNoKey;
-    $("keyOnly").textContent = fragment;
-    try {
-      $("qrWrap").innerHTML = qrToSvg(qrEncode(fullUrl)) +
-        '<div class="qr-label">Scan with another device to open this link.</div>';
-    } catch (_) {
-      $("qrWrap").innerHTML = '';
-    }
-    const ttlLabel = bucket === 1 ? "1 hour" : bucket === 6 ? "6 hours" : bucket === 24 ? "1 day" : "7 days";
-    const timeStr = expiresAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-    $("exp").textContent = `Expires in ${ttlLabel} (${timeStr})`;
-    $("result").classList.remove("hidden");
-    $("result").scrollIntoView({ behavior: "smooth", block: "nearest" });
-    $("userKey").value = randomKey();
+    const key = randomKey();
+    const ctB64 = b64u.enc(await encryptText(text, key));
+    if (ctB64.length > 65536) throw new Error("Text too large — limit is ~48 KB after encryption.");
+    const created = await insertSnippet(ctB64, ttlHours);
+    current = { id: created.id, key };
+    const expiresAt = expiryFromRow(created);
+    $("exp").textContent = `Deletes itself in ${TTL_LABELS[ttlHours]}, at ${whenText(expiresAt).at}.`;
+    setUrlParts($("fullUrl"), created.id, key);
+    $("linkOnly").textContent = `${host}/${created.id}`;
+    $("keyOnly").textContent = key;
+    try { $("qr").innerHTML = qrToSvg(qrEncode(`${location.origin}/${created.id}#${key}`), 4, 2); }
+    catch (_) { $("qr").innerHTML = ""; }
+    $("text").value = "";
+    setView("result");
   } catch (e) {
-    $("err1").textContent = String(e.message || e);
+    $("err").textContent = String(e.message || e);
   } finally {
-    $("create").disabled = false;
-    $("create").textContent = "Generate link";
+    $("create").textContent = "Encrypt → link";
+    syncComposer();
   }
-});
-
-function wireCopy(btnId, srcId, label) {
-  $(btnId).addEventListener("click", async () => {
-    try {
-      await navigator.clipboard.writeText($(srcId).textContent);
-      $(btnId).textContent = "Copied";
-    } catch (_) {
-      $(btnId).textContent = "Failed";
-    }
-    setTimeout(() => $(btnId).textContent = label, 1200);
-  });
 }
-wireCopy("copy", "url", "Copy link");
-wireCopy("copyUrlNoKey", "urlNoKey", "Copy link");
-wireCopy("copyKey", "keyOnly", "Copy key");
-
-$("vnew").addEventListener("click", () => { location.href = "/"; });
 
 // ---------- viewer ----------
-async function showViewer(id, fragment) {
-  $("composerView").classList.add("hidden");
-  $("viewerView").classList.remove("hidden");
-  $("err2").textContent = "";
-  $("vLoading").classList.remove("hidden");
+async function openSnippet(id, key) {
+  let row;
   try {
-    const row = await fetchSnippet(id);
-    const payload = b64u.dec(row.ciphertext);
-    const text = await decryptText(payload, fragment);
-    $("vLoading").classList.add("hidden");
-    $("keyPrompt").classList.add("hidden");
-    $("viewerCard").classList.remove("hidden");
-    $("view").textContent = text;
-    const exp = expiryFromRow(row);
-    const expStr = exp.toLocaleDateString() + " " + exp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-    $("vmeta").textContent = `Decrypted locally · expires ${expStr}`;
-    $("vcopy").onclick = async () => {
-      try {
-        await navigator.clipboard.writeText(text);
-        $("vcopy").textContent = "Copied";
-      } catch (_) {
-        $("vcopy").textContent = "Failed";
-      }
-      setTimeout(() => $("vcopy").textContent = "Copy text", 1200);
-    };
+    row = await fetchSnippet(id);
   } catch (e) {
-    $("vLoading").classList.add("hidden");
-    const message = String(e.message || e);
-    $("err2").textContent = e.isApiError ? message : "Decryption failed: " + message;
+    if (e.status === 404) return setView("missing");
+    throw e;
+  }
+  const text = await decryptText(b64u.dec(row.ciphertext), key);
+  const w = whenText(expiryFromRow(row));
+  $("vText").textContent = text;
+  $("vExp").textContent = `Deletes itself in ${w.left}, at ${w.at}.`;
+  // Drop the key from the address bar so it doesn't linger in history or on screen.
+  history.replaceState(null, "", `/${id}`);
+  setView("view");
+}
+
+function showPrompt(id, message) {
+  current = { id, key: "" };
+  $("pErr").textContent = message || "";
+  setView("prompt");
+  setTimeout(() => $("keyInput").focus(), 0);
+}
+
+async function unlock() {
+  const key = $("keyInput").value.trim();
+  if (!key) { $("pErr").textContent = "Paste the key first."; return; }
+  $("unlock").disabled = true;
+  try {
+    await openSnippet(current.id, key);
+  } catch (e) {
+    $("pErr").textContent = e.isApiError ? String(e.message) : "That key doesn't open this snippet. Check for missing characters.";
+  } finally {
+    $("unlock").disabled = false;
   }
 }
 
-function showKeyPrompt(id) {
-  $("composerView").classList.add("hidden");
-  $("viewerView").classList.remove("hidden");
-  $("viewerCard").classList.add("hidden");
-  $("keyPrompt").classList.remove("hidden");
-  $("vTitle").textContent = "Enter the decryption key.";
-  $("vLede").textContent = "The URL has the snippet ID but no key. Paste the key you received separately to decrypt locally.";
-
-  const tryUnlock = async () => {
-    const k = $("keyInput").value.trim();
-    if (!k) { $("err2").textContent = "Paste the decryption key first."; return; }
-    $("err2").textContent = "";
-    $("unlock").disabled = true;
-    try {
-      await showViewer(id, k);
-    } finally {
-      $("unlock").disabled = false;
-    }
-  };
-  $("unlock").onclick = tryUnlock;
-  $("keyInput").addEventListener("keydown", (e) => {
-    if (e.key === "Enter") { e.preventDefault(); tryUnlock(); }
+function wireCopy(btn, getText) {
+  const label = btn.textContent;
+  btn.addEventListener("click", async () => {
+    try { await navigator.clipboard.writeText(getText()); btn.textContent = "Copied"; }
+    catch (_) { btn.textContent = "Copy failed"; }
+    setTimeout(() => { btn.textContent = label; }, 1400);
   });
-  setTimeout(() => $("keyInput").focus(), 0);
+}
+
+function goHome() {
+  current = null;
+  history.replaceState(null, "", "/");
+  syncComposer();
+  setView("compose");
+  $("text").focus();
 }
 
 // ---------- init ----------
 (function init() {
-  $("userKey").value = randomKey();
-  syncStats();
-  const auditUrl = $("auditUrl");
-  if (auditUrl) {
-    auditUrl.href = location.origin + "/";
-    auditUrl.textContent = location.origin + "/";
-  }
+  document.querySelectorAll(".js-host").forEach((el) => { el.textContent = host; });
+  document.querySelectorAll(".js-origin").forEach((el) => { el.textContent = location.origin; });
+  $("text").addEventListener("input", syncComposer);
+  $("create").addEventListener("click", create);
+  $("unlock").addEventListener("click", unlock);
+  $("keyInput").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); unlock(); } });
+  document.querySelectorAll(".js-new").forEach((b) => b.addEventListener("click", goHome));
+  document.querySelector("[data-home]").addEventListener("click", () => {
+    if (document.body.dataset.view !== "compose" && document.body.dataset.view !== "result") goHome();
+  });
+  wireCopy($("copyFull"), () => `${location.origin}/${current.id}#${current.key}`);
+  wireCopy($("copyLink"), () => `${location.origin}/${current.id}`);
+  wireCopy($("copyKey"), () => current.key);
+  wireCopy($("vCopy"), () => $("vText").textContent);
+  syncComposer();
+
   const r = parseRoute();
-  if (r.id && r.frag) showViewer(r.id, r.frag);
-  else if (r.id) showKeyPrompt(r.id);
+  if (r.id && r.frag) {
+    setView("loading");
+    openSnippet(r.id, r.frag).catch((e) => showPrompt(r.id, e.isApiError
+      ? String(e.message)
+      : "The key in this link doesn't open the snippet. Paste the key if you have it."));
+  } else if (r.id) {
+    showPrompt(r.id);
+  } else {
+    setView("compose");
+    $("text").focus();
+  }
 })();
 </script>
 </body>
