@@ -14,9 +14,7 @@ The site host serves the JavaScript. A compromised host could replace the page w
 
 `GET /api/snippets/{id}` returns `ciphertext` and `expires_at` while the snippet is live. Missing and expired snippets both return `404`. The API has no listing, update, or delete endpoint.
 
-Requests must use JSON. Ciphertext must use base64url characters and fit within 65,536 characters. The API limits each IP to 10 create requests per 60 seconds.
-
-Cloudflare's rate-limit counters are local to the serving location and eventually consistent.
+Requests must use JSON. Ciphertext must use base64url characters and fit within 65,536 characters. The API limits each IP to 10 create requests per one-minute window. The counter lives in D1 under a SHA-256 hash of the IP, and the scheduled job deletes old windows.
 
 ## Local development
 
@@ -41,7 +39,7 @@ curl -s http://localhost:8787/api/snippets/ID
 ## Self-hosting
 
 1. Create a D1 database with `npx wrangler d1 create trustless-txt`.
-2. Copy its `database_id` into `wrangler.jsonc`, choose an unused positive rate-limit namespace ID, and replace the `text.numeri.xyz` route with a custom domain in your Cloudflare zone if needed.
+2. Copy its `database_id` into `wrangler.jsonc` and replace the `text.numeri.xyz` route with a custom domain in your Cloudflare zone if needed.
 3. Set `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_TOKEN` in your deploy environment.
 4. Apply migrations with `npx wrangler d1 migrations apply DB --remote`.
 5. Deploy with `npx wrangler deploy`.

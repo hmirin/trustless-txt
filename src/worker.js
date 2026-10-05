@@ -2,6 +2,8 @@ const MAX_CIPHERTEXT_CHARS = 65_536;
 const MAX_BODY_BYTES = MAX_CIPHERTEXT_CHARS + 1_024;
 const DEFAULT_DB_MAX_SIZE_BYTES = 400 * 1024 * 1024;
 const HOUR_MS = 60 * 60 * 1000;
+const RATE_WINDOW_MS = 60 * 1000;
+const RATE_LIMIT = 10;
 const TTL_HOURS = new Set([1, 6, 24, 168]);
 const ID_PATTERN = /^[A-Za-z0-9_-]{16}$/;
 const CIPHERTEXT_PATTERN = /^[A-Za-z0-9_-]+$/;
@@ -169,12 +171,26 @@ async function getSnippet(id, env) {
   }
 }
 
-async function createRateLimitResponse(request, env) {
+async function clientKey(request) {
+  // Store a hash, not the raw IP. Rows live one minute plus the cleanup interval.
   const ip = request.headers.get('CF-Connecting-IP') ?? 'unknown';
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(`trustless-txt/rate/${ip}`));
+  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+// Fixed one-minute window counted in D1. Cloudflare's Rate Limiting binding is
+// eventually consistent and let 33 creates in 40 s through in production.
+async function createRateLimitResponse(request, env) {
+  const now = Date.now();
+  const windowStart = now - (now % RATE_WINDOW_MS);
   try {
-    const result = await env.RATE_LIMITER.limit({key: ip});
-    if (result.success) return null;
-    return error('rate_limited', 'Too many snippets from this IP. Try again in a minute.', 429, {'Retry-After': '60'});
+    const row = await env.DB.prepare(
+      'INSERT INTO rate_limits (client, window_start, count) VALUES (?, ?, 1) ' +
+      'ON CONFLICT(client, window_start) DO UPDATE SET count = count + 1 RETURNING count',
+    ).bind(await clientKey(request), windowStart).first();
+    if (row.count <= RATE_LIMIT) return null;
+    const retryAfter = Math.max(1, Math.ceil((windowStart + RATE_WINDOW_MS - now) / 1000));
+    return error('rate_limited', 'Too many snippets from this IP. Try again in a minute.', 429, {'Retry-After': String(retryAfter)});
   } catch {
     return error('rate_limit_unavailable', 'Snippet creation is temporarily unavailable.', 503);
   }
@@ -213,6 +229,8 @@ export default {
   },
 
   async scheduled(_controller, env) {
-    await env.DB.prepare('DELETE FROM snippets WHERE expires_at <= ?').bind(Date.now()).run();
+    const now = Date.now();
+    await env.DB.prepare('DELETE FROM snippets WHERE expires_at <= ?').bind(now).run();
+    await env.DB.prepare('DELETE FROM rate_limits WHERE window_start < ?').bind(now - RATE_WINDOW_MS).run();
   },
 };

@@ -4,11 +4,9 @@ import {after, before, test} from 'node:test';
 import {Miniflare} from 'miniflare';
 import snippetWorker from '../src/worker.js';
 
-const migration = await readFile('migrations/0001_snippets.sql', 'utf8');
+const migration = (await Promise.all(['0001_snippets.sql', '0002_rate_limits.sql']
+  .map((file) => readFile(`migrations/${file}`, 'utf8')))).join(';\n');
 const payload = 'AAECAwQFBgcICQoLDA0ODxAREhMUFRYX';
-const RATE_LIMITS = {
-  RATE_LIMITER: {namespace_id: '704955137', simple: {limit: 10, period: 60}},
-};
 let mf;
 let workerNumber = 0;
 
@@ -38,7 +36,6 @@ async function makeWorker(maxSize = 419_430_400) {
       scriptPath: 'src/worker.js',
       compatibilityDate: '2026-08-06',
       d1Databases: {DB: databaseName},
-      ratelimits: RATE_LIMITS,
       bindings: {DB_MAX_SIZE_BYTES: String(maxSize)},
       serviceBindings: {ASSETS: () => new Response('asset')},
     },
@@ -237,7 +234,7 @@ test('the API has no listing route and unsupported API methods return JSON', asy
   assertApiHeaders(badId);
 });
 
-test('the rate-limit binding returns 429 after ten creates per client IP', async () => {
+test('the D1 rate limit returns 429 after ten creates per client IP and keeps other IPs separate', async () => {
   const statuses = [];
   for (let index = 0; index < 11; index++) {
     const response = await request('/api/snippets', {
@@ -248,11 +245,16 @@ test('the rate-limit binding returns 429 after ten creates per client IP', async
     statuses.push(response.status);
     assertApiHeaders(response);
     if (response.status === 429) {
-      assert.equal(response.headers.get('Retry-After'), '60');
+      const retryAfter = Number(response.headers.get('Retry-After'));
+      assert.ok(retryAfter >= 1 && retryAfter <= 60);
       assert.equal((await response.json()).error, 'rate_limited');
     }
   }
   assert.deepEqual(statuses, [...Array(10).fill(201), 429]);
+  const otherIp = await request('/api/snippets', {method: 'POST', body: JSON.stringify({ciphertext: payload, ttl_hours: 1}), ip: '203.0.113.71'});
+  assert.equal(otherIp.status, 201);
+  const stored = await dbCommand({action: 'first', sql: 'SELECT client FROM rate_limits LIMIT 1'});
+  assert.match(stored.client, /^[0-9a-f]{64}$/);
 });
 
 test('the database size guard returns 503 before inserting', async () => {

@@ -19,17 +19,6 @@
       "migrations_dir": "migrations"
     }
   ],
-  "ratelimits": [
-    {
-      "name": "RATE_LIMITER",
-      // Use a positive namespace ID unique within this Cloudflare account.
-      "namespace_id": "704955137",
-      "simple": {
-        "limit": 10,
-        "period": 60
-      }
-    }
-  ],
   "vars": {
     "DB_MAX_SIZE_BYTES": "419430400"
   },
